@@ -10,8 +10,7 @@ import { SoundManager } from "./SoundManager.js";
 import { ShopManager } from "./ShopManager.js";
 
 // Initialize managers
-export const userDataManager = new UserDataManager();
-userDataManager.reset();      // Reset user data to defaults
+export const userDataManager = new UserDataManager();     // Reset user data to defaults
 userDataManager.retrieve();   // Retrieve saved user data
 
 export const sceneManager = new SceneManager();
