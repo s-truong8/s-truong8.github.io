@@ -18,23 +18,35 @@ class ShopManager {
         this.shopItems = {
             skins: {
                 default: {
-                    name: "Chicken",
-                    src: "assets/images/player/chicken.png",
+                    name: "Vert",
+                    src: "assets/images/player/default.png",
                     price: 0,
-                    description: "The default chicken.",
+                    description: "L'ordinateur par défaut.",
                 },
-                duck: {
-                    name: "Duck",
-                    src: "assets/images/player/duck.png",
-                    price: 10,
-                    description: "A duck, a simple bird.",
-                },
-                bear: {
-                    name: "Bear",
-                    src: "assets/images/player/bear.png",
+                blue: {
+                    name: "Bleu",
+                    src: "assets/images/player/blue.png",
                     price: 100,
-                    description: "A bear, a big animal.",
-                }
+                    description: "Un ordinateur bleu.",
+                },
+                red: {
+                    name: "Rouge",
+                    src: "assets/images/player/red.png",
+                    price: 200,
+                    description: "Un ordinateur rouge.",
+                },
+                yellow: {
+                    name: "Jaune",
+                    src: "assets/images/player/yellow.png",
+                    price: 400,
+                    description: "Un ordinateur jaune.",
+                },
+                purple: {
+                    name: "Mauve",
+                    src: "assets/images/player/purple.png",
+                    price: 500,
+                    description: "Un ordinateur mauve.",
+                },
             },
         };
     }
@@ -68,11 +80,11 @@ class ShopManager {
         // If player owns item
         if (this.userDataManager.getUserData().owned[category].includes(key)) {
             if (this.userDataManager.getUserData().info.activeSkin == key) {
-                this.buyButton.innerHTML = "Selected";
+                this.buyButton.innerHTML = "Actif";
             } else if (this.userDataManager.getUserData().info.activePerks.includes(key)) {
-                this.buyButton.innerHTML = "Active";
+                this.buyButton.innerHTML = "Actif";
             } else {
-                this.buyButton.innerHTML = "Select";
+                this.buyButton.innerHTML = "Choisir";
                 this.buyButton.onclick = () => {
                     if (category == "skins") {
                         this.userDataManager.setSkin(key);
@@ -82,7 +94,7 @@ class ShopManager {
                 };
             }
         } else {
-            this.buyButton.innerHTML = "Buy";
+            this.buyButton.innerHTML = "Acheter";
             this.buyButton.onclick = () => {
                 this.buy(category, key);
             };

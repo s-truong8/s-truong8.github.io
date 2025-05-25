@@ -3,8 +3,9 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Document</title>
+		<title>Cyberbond</title>
 		<link rel="stylesheet" href="style.css" />
+        <link rel="icon" type="image/x-icon" href="assets/images/player/purple.png" />
 	</head>
 	<body>
 		<div class="gameContainer">
@@ -94,32 +95,26 @@
 			<div class="gameGui gameGui-instructions hidden">
 				<h3>Instructions</h3>
 				<p>
-					This game is an improved version of the legendary Crossy
-					Road.
+					Dans Cyberbond, vous devez sauter de plateforme en plateforme pour atteindre la plus haute distance possible. Vous gagnez lorsque vous terminez les 10 niveaux.
 				</p>
 				<p>
-					The improvements include the addition of four unique
-					power-ups, collectible coins, and purchasable skins. These
-					skins are permanently kept upon purchase.
+					Il existe différents types de plateformes dont les particularités sont essentielles pour avancer dans le jeu. Certaines vous font sauter plus haut, d'autres bougent par elles-mêmes et d'autres encore disparaissent après que vous mettiez les pieds dessus.
 				</p>
 				<p>
-					Additionally, if you crave a greater challenge, you can
-					switch to hard mode. In this mode, you must be quick—you
-					won't have time to think! As the game goes on, cars and logs
-					become faster!
+					Si vous allez suffisament haut, vous rencontrerez des virus dangereux. Ils vous feront perdre la partie si vous les touchez.
 				</p>
 				<p>
-					Your goal is to avoid obstacles and cross the road! Use the
-					arrow keys or WASD to move around the map.
+					Pour bouger à gauche, appuyez sur A et pour bouger à droite, appuyez sur D. La touche ESPACE vous permet de sauter. Sachez que si vous dépassez les bordures latérales du jeu, vous serez replacé au côté opposé de l'écran. Utile pour vous créer de nouveaux chemins.
 				</p>
+                <p>
+                    Si vous ne vous sentez pas assez mis au défi, vous pouvez activer le mode difficile dans les paramètres. Dans ce mode, le jeu avance automatiquement et vous ne pouvez pas attendre. Bonne chance à vous!
+                </p>
 				<button id="backButton">Back</button>
 			</div>
 
 			<!-- Active game screen -->
 			<div class="gameGui gameGui-active hidden">
 				<h3 id="score">0</h3>
-				<h3 id="highScore">Top 0</h3>
-				<h3 id="speed">Speed 0</h3>
 				<h3 id="coinCounter">
 					<span id="coins">0</span
 					><img src="assets/images/collectables/coin.png" />

@@ -6,7 +6,7 @@ class UserDataManager {
                 perks: []
             },
             info: {
-                coins: 0,
+                coins: 200,
                 highestDistance: 0,
                 activeSkin: "default",
                 activePerks: []
