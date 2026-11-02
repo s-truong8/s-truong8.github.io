@@ -115,6 +115,44 @@
   .warn { color:#7A4300; background:#FFF4E0; border:1px solid #F2D39B; border-radius:8px; padding:8px 10px; }
   .study { color:#4F3D00; background:#FFF9E3; border:1px solid #EFE0A8; border-radius:8px; padding:8px 10px; font-variant-numeric:tabular-nums; }
 
+  #unc { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:14px 18px 16px; display:grid; gap:12px; }
+  body.exam-on #unc, body.exam-on #uncBtn { display:none; }
+  .unc-top { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; }
+  .unc-top h2 { margin:0; font-size:15px; letter-spacing:-.01em; }
+  .tabs { display:inline-flex; border:1px solid var(--line-strong); border-radius:8px; overflow:hidden; }
+  .tabs button { border:0; border-radius:0; min-height:34px; }
+  .tabs button + button { border-left:1px solid var(--line-strong); }
+  .tabs button[aria-selected="true"] { background:var(--ink); color:#fff; }
+  .unc-src { display:flex; flex-wrap:wrap; gap:6px 18px; font-size:13px; }
+  .unc-src label { display:inline-flex; align-items:center; gap:6px; cursor:pointer; min-height:32px; }
+  .unc-grid { display:flex; flex-wrap:wrap; gap:16px; align-items:stretch; margin-top:4px; }
+  .unc-lcd { flex:0 1 300px; min-width:240px; background:#0F1622; color:#E6F0FF; border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:6px; font-family:var(--mono); }
+  .unc-lcd .fn { display:flex; justify-content:space-between; font-size:12px; color:#7FB2FF; font-weight:600; }
+  .unc-lcd .val { font-size:30px; font-weight:600; text-align:right; letter-spacing:.02em; font-variant-numeric:tabular-nums; }
+  .unc-lcd .val small { font-size:15px; margin-left:6px; color:#B9C7DD; }
+  .unc-lcd .rg { font-size:12px; color:#9FB0C8; }
+  .unc-lcd .empty { color:#9FB0C8; font-size:13px; font-family:inherit; }
+  .unc-form { flex:1 1 360px; display:flex; flex-wrap:wrap; gap:10px 16px; align-content:flex-start; }
+  .unc-form label { display:flex; flex-direction:column; gap:4px; font-size:13px; font-weight:600; }
+  .unc-form .unit { font-weight:400; color:var(--muted); }
+  .unc-form input { width:170px; min-height:38px; padding:0 10px; font:inherit; font-size:15px; font-family:var(--mono); border:1px solid var(--line-strong); border-radius:8px; }
+  .unc-form input.ok { border-color:#2A9D4A; background:#ECF8EF; }
+  .unc-form input.bad { border-color:#D23C3C; background:#FDEEEE; }
+  .unc-actions { flex-basis:100%; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .unc-score { margin-left:auto; font-family:var(--mono); font-size:12.5px; color:var(--muted); }
+  .unc-fb:empty { display:none; }
+  .unc-fb { border-radius:8px; padding:10px 12px; background:#F6F7F9; border:1px solid var(--line); font-size:13.5px; display:grid; gap:4px; font-variant-numeric:tabular-nums; }
+  .unc-fb .good { color:#1E7A3A; font-weight:600; } .unc-fb .wrong { color:#B02A2A; font-weight:600; }
+  .unc-note { margin:0; font-size:12.5px; }
+  .sheet-wrap { overflow-x:auto; }
+  table.sheet { border-collapse:collapse; font-size:13px; font-variant-numeric:tabular-nums; min-width:560px; }
+  table.sheet caption { text-align:left; font-weight:650; margin-bottom:8px; }
+  table.sheet th, table.sheet td { border:1px solid var(--line-strong); padding:5px 10px; text-align:left; white-space:nowrap; }
+  table.sheet thead th { background:#F1F3F6; font-size:12px; }
+  table.sheet th[scope="rowgroup"] { background:#F6F7F9; vertical-align:middle; }
+  table.sheet td.n { text-align:right; font-family:var(--mono); font-size:12.5px; }
+  table.sheet tr.cur td { background:#FFF6C9; }
+  table.sheet .note td { font-style:italic; color:var(--muted); white-space:normal; }
   #helpbox { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:6px 20px 12px; columns:2 380px; column-gap:40px; }
   #helpbox h2 { font-size:12px; font-family:var(--mono); font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--primary); margin:14px 0 6px; break-after:avoid; }
   #helpbox ul { margin:0 0 6px; padding-left:18px; break-inside:avoid-column; }
@@ -170,6 +208,7 @@
     </div>
     <div class="app-actions">
       <label class="chk"><input type="checkbox" id="study"> Mode étude <small>incertitudes et conseils</small></label>
+      <button id="uncBtn" type="button" aria-expanded="false" aria-controls="unc">Incertitudes</button>
       <button id="help" type="button" aria-expanded="false" aria-controls="helpbox">Aide</button>
       <button id="examBtn" type="button" class="primary">Mode examen</button>
     </div>
@@ -228,6 +267,38 @@
 <div id="bar">
   <div id="status"></div>
   <div id="info"></div>
+  <section id="unc" hidden aria-label="Entraînement aux incertitudes">
+    <div class="unc-top">
+      <h2>Incertitudes · Siglent SDM3055</h2>
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" id="tab-ex" aria-selected="true" aria-controls="unc-ex">Exercice</button>
+        <button type="button" role="tab" id="tab-sheet" aria-selected="false" aria-controls="unc-sheet">Fiche technique</button>
+      </div>
+    </div>
+    <div id="unc-ex" role="tabpanel" aria-labelledby="tab-ex">
+      <div class="unc-src" role="radiogroup" aria-label="Lecture à utiliser">
+        <label><input type="radio" name="uncsrc" value="rand" checked> Lecture au hasard</label>
+        <label><input type="radio" name="uncsrc" value="mm1"> Multimètre 1</label>
+        <label><input type="radio" name="uncsrc" value="mm2"> Multimètre 2</label>
+      </div>
+      <div class="unc-grid">
+        <div class="unc-lcd" id="unc-lcd" aria-live="polite"></div>
+        <form class="unc-form" id="unc-form" autocomplete="off">
+          <label><span>Résolution r <span class="unit" data-u></span></span><input id="unc-r" inputmode="decimal" placeholder="ex. 0,0001"></label>
+          <label><span>Incertitude δ <span class="unit" data-u></span></span><input id="unc-d" inputmode="decimal" placeholder="ex. 0,003"></label>
+          <div class="unc-actions">
+            <button type="submit" class="primary">Vérifier</button>
+            <button type="button" id="unc-new">Nouvelle lecture</button>
+            <button type="button" id="unc-show">Solution</button>
+            <span class="unc-score" id="unc-score"></span>
+          </div>
+        </form>
+      </div>
+      <div class="unc-fb" id="unc-fb" aria-live="polite"></div>
+      <p class="muted unc-note">δ = (p % × |lect.| + n × r), avec p et n tirés de la fiche pour la fonction et l’échelle affichées. En Ω 2W, ajoutez 0,2 Ω. Une réponse à ±12 % de la valeur exacte est acceptée, comme en mode examen.</p>
+    </div>
+    <div id="unc-sheet" role="tabpanel" aria-labelledby="tab-sheet" hidden></div>
+  </section>
   <div id="helpbox" hidden>
     <h2>Platine</h2>
     <ul>
@@ -281,48 +352,49 @@ const Engine = (() => {
   }
   const hk = (r, c) => `H:${r}:${c}`;
 
-  // Échelles. dec = décimales affichées dans l'unité de l'échelle ; spec = [% lecture, n chiffres] (formules du cours)
+  // Échelles. dec = décimales affichées dans l'unité de l'échelle ; res = résolution si ce n'est pas 10^-dec ;
+  // spec = [% lecture, n × r] selon la fiche technique du Siglent SDM3055 ; add = 0,2 Ω du mode Ω 2W (dans l'unité de l'échelle)
   const V_RANGES = [
     { fs: 0.2, unit: 'mV', k: 1e3, dec: 3, label: '200 mV', spec: [0.015, 8] },
     { fs: 2, unit: 'V', k: 1, dec: 5, label: '2 V', spec: [0.015, 6] },
     { fs: 20, unit: 'V', k: 1, dec: 4, label: '20 V', spec: [0.015, 8] },
-    { fs: 200, unit: 'V', k: 1, dec: 3, label: '200 V' },
+    { fs: 200, unit: 'V', k: 1, dec: 3, label: '200 V', spec: [0.015, 6] },
     { fs: 1000, unit: 'V', k: 1, dec: 2, label: '1000 V' },
   ];
   const I_RANGES = [
     { fs: 200e-6, unit: 'µA', k: 1e6, dec: 3, label: '200 µA', spec: [0.055, 10], shunt: 10 },
     { fs: 2e-3, unit: 'mA', k: 1e3, dec: 5, label: '2 mA', spec: [0.055, 10], shunt: 0.1 },
     { fs: 20e-3, unit: 'mA', k: 1e3, dec: 4, label: '20 mA', spec: [0.095, 40], shunt: 0.1 },
-    { fs: 200e-3, unit: 'mA', k: 1e3, dec: 3, label: '200 mA', shunt: 0.05 },
-    { fs: 2, unit: 'A', k: 1, dec: 5, label: '2 A', shunt: 0.01 },
-    { fs: 10, unit: 'A', k: 1, dec: 4, label: '10 A', shunt: 0.01 },
+    { fs: 200e-3, unit: 'mA', k: 1e3, dec: 3, label: '200 mA', spec: [0.07, 16], shunt: 0.05 },
+    { fs: 2, unit: 'A', k: 1, dec: 5, label: '2 A', spec: [0.17, 40], shunt: 0.01 },
+    { fs: 10, unit: 'A', k: 1, dec: 4, label: '10 A', spec: [0.25, 10], shunt: 0.01 },
   ];
   const R_RANGES = [
-    { fs: 200, unit: 'Ω', k: 1, dec: 3, label: '200 Ω', it: 1e-3 },
+    { fs: 200, unit: 'Ω', k: 1, dec: 3, label: '200 Ω', it: 1e-3, spec: [0.03, 10], add: 0.2 },
     { fs: 2e3, unit: 'kΩ', k: 1e-3, dec: 5, label: '2 kΩ', it: 1e-3, spec: [0.02, 6], add: 0.0002 },
     { fs: 2e4, unit: 'kΩ', k: 1e-3, dec: 4, label: '20 kΩ', it: 1e-4, spec: [0.02, 6], add: 0.0002 },
-    { fs: 2e5, unit: 'kΩ', k: 1e-3, dec: 3, label: '200 kΩ', it: 1e-5 },
-    { fs: 2e6, unit: 'MΩ', k: 1e-6, dec: 5, label: '2 MΩ', it: 1e-6 },
-    { fs: 1e7, unit: 'MΩ', k: 1e-6, dec: 4, label: '10 MΩ', it: 2e-7 },
+    { fs: 2e5, unit: 'kΩ', k: 1e-3, dec: 3, label: '200 kΩ', it: 1e-5, spec: [0.02, 20], add: 0.0002 },
+    { fs: 2e6, unit: 'MΩ', k: 1e-6, dec: 5, label: '2 MΩ', it: 1e-6, spec: [0.04, 8], add: 2e-7 },
+    { fs: 1e7, unit: 'MΩ', k: 1e-6, dec: 4, label: '10 MΩ', it: 2e-7, spec: [0.25, 3], add: 2e-7 },
     { fs: 1e8, unit: 'MΩ', k: 1e-6, dec: 3, label: '100 MΩ', it: 2e-8, spec: [1.75, 4], add: 2e-7 },
   ];
   const C_RANGES = [
-    { fs: 2e-9, unit: 'nF', k: 1e9, dec: 3, label: '2 nF' },
-    { fs: 20e-9, unit: 'nF', k: 1e9, dec: 2, label: '20 nF' },
-    { fs: 200e-9, unit: 'nF', k: 1e9, dec: 1, label: '200 nF' },
-    { fs: 2e-6, unit: 'µF', k: 1e6, dec: 3, label: '2 µF' },
-    { fs: 20e-6, unit: 'µF', k: 1e6, dec: 2, label: '20 µF' },
-    { fs: 200e-6, unit: 'µF', k: 1e6, dec: 1, label: '200 µF' },
-    { fs: 2e-3, unit: 'mF', k: 1e3, dec: 3, label: '2 mF' },
-    { fs: 10e-3, unit: 'mF', k: 1e3, dec: 2, label: '10 mF' },
+    { fs: 2e-9, unit: 'nF', k: 1e9, dec: 3, label: '2 nF', spec: [3, 20] },
+    { fs: 20e-9, unit: 'nF', k: 1e9, dec: 2, label: '20 nF', spec: [1, 10] },
+    { fs: 200e-9, unit: 'nF', k: 1e9, dec: 1, label: '200 nF', spec: [1, 10] },
+    { fs: 2e-6, unit: 'µF', k: 1e6, dec: 3, label: '2 µF', spec: [1, 10] },
+    { fs: 20e-6, unit: 'µF', k: 1e6, dec: 2, label: '20 µF', spec: [1, 10] },
+    { fs: 200e-6, unit: 'µF', k: 1e6, dec: 1, label: '200 µF', spec: [1, 10] },
+    { fs: 10e-3, unit: 'µF', k: 1e6, dec: 0, res: 10, label: '10000 µF', spec: [2, 5] },
   ];
   const RANGES = { DCV: V_RANGES, ACV: V_RANGES, DCI: I_RANGES, ACI: I_RANGES, OHM: R_RANGES, CAP: C_RANGES };
   const R_VOLTMETER = 10e6;
 
   // incertitude dans l'unité de l'échelle (null si la spécification n'est pas donnée dans le cours)
+  const resOf = rg => rg.res ?? Math.pow(10, -rg.dec);   // résolution r, dans l'unité de l'échelle
   function uncertainty(rg, displayValue) {
     if (!rg.spec) return null;
-    return rg.spec[0] / 100 * Math.abs(displayValue) + rg.spec[1] * Math.pow(10, -rg.dec) + (rg.add || 0);
+    return rg.spec[0] / 100 * Math.abs(displayValue) + rg.spec[1] * resOf(rg) + (rg.add || 0);
   }
 
   function makeUF() {
@@ -544,7 +616,7 @@ const Engine = (() => {
     return res;
   }
 
-  return { solve, holeType, isConductive, nodeOf, nodeLetter, hk, RANGES, uncertainty, ROWS, COLS, R_VOLTMETER };
+  return { solve, holeType, isConductive, nodeOf, nodeLetter, hk, RANGES, uncertainty, resOf, ROWS, COLS, R_VOLTMETER };
 })();
 if (typeof module !== 'undefined') module.exports = Engine;
 
@@ -803,9 +875,9 @@ if (typeof module !== 'undefined') module.exports = Presets;
       if (!s.on || !r || r.value == null) { disp[m] = null; continue; }
       const rg = E.RANGES[s.mode][r.range];
       if (r.ol) { disp[m] = { text: 'OL', unit: rg.unit, rg, dv: null }; continue; }
-      const res = 10 ** -rg.dec / rg.k;
+      const res = E.resOf(rg) / rg.k;
       const x = r.value + PR.randn() * 0.45 * res;
-      let dv = rnd(x * rg.k, rg.dec); if (Object.is(dv, -0)) dv = 0;
+      let dv = rg.res ? Math.round(x * rg.k / rg.res) * rg.res : rnd(x * rg.k, rg.dec); if (Object.is(dv, -0)) dv = 0;
       disp[m] = { text: (dv < 0 ? '-' : '') + Math.abs(dv).toFixed(rg.dec), unit: rg.unit, rg, dv };
     }
   }
@@ -1033,9 +1105,9 @@ if (typeof module !== 'undefined') module.exports = Presets;
     let h = '';
     for (const m of ['mm1', 'mm2']) {
       const d = disp[m]; if (!d || d.dv == null) continue;
-      const u = E.uncertainty(d.rg, d.dv), res = (10 ** -d.rg.dec).toFixed(d.rg.dec);
+      const u = E.uncertainty(d.rg, d.dv), res = E.resOf(d.rg).toFixed(d.rg.dec);
       h += `<div class="study">Multimètre ${m.slice(2)} : L = ${comma(d.text)} ${d.unit} (échelle ${d.rg.label}) → `;
-      h += u == null ? 'spécification non fournie dans le cours pour cette échelle.' :
+      h += u == null ? 'aucune spécification sur la fiche du SDM3055 pour cette échelle.' :
         `δ = ${comma(d.rg.spec[0])} % × ${comma(Math.abs(d.dv).toFixed(d.rg.dec))} + ${d.rg.spec[1]} × ${comma(res)}${d.rg.add ? ' + ' + comma(d.rg.add) : ''} = <b>${comma(u.toPrecision(3))} ${d.unit}</b>`;
       h += '</div>';
     }
@@ -1534,7 +1606,7 @@ if (typeof module !== 'undefined') module.exports = Presets;
       if (q.meas) {
         const e = expectMeas(ch, q, X.snap), f = UF[q.unit];
         let E0 = e.si * f; if (q.dir) E0 = Math.abs(E0);
-        const resU = 10 ** -e.rg.dec / e.rg.k * f, dec = Math.max(0, Math.round(-Math.log10(resU)));
+        const resU = E.resOf(e.rg) / e.rg.k * f, dec = Math.max(0, Math.round(-Math.log10(resU)));
         expV[q.id] = E0;
         const uv = user(q.id + '.v'), uvAbs = q.dir ? Math.abs(uv) : uv;
         const tol = Math.max(5 * resU, 0.002 * Math.abs(E0));
@@ -1682,6 +1754,130 @@ if (typeof module !== 'undefined') module.exports = Presets;
   };
 })();
 
+
+// ===================== Entraînement aux incertitudes =====================
+(() => {
+  const E = Engine, API = window.SimAPI;
+  const $ = id => document.getElementById(id);
+  const comma = s => String(s).replace('.', ',');
+  const parseNum = s => { const t = String(s ?? '').trim().replace(/\s/g, '').replace(',', '.').replace('−', '-'); return t === '' ? NaN : Number(t); };
+  const sig = (x, n = 2) => (x === 0 || !isFinite(x)) ? comma(String(x)) : comma(Number(x.toPrecision(n)).toString());
+  const FN = { DCV: 'DCV · Tension CC', DCI: 'DCI · Courant CC', OHM: 'Ω 2W · Résistance', CAP: 'CAP · Capacité' };
+  const panel = $('unc'), btn = $('uncBtn'), lcd = $('unc-lcd'), fb = $('unc-fb'), inR = $('unc-r'), inD = $('unc-d');
+  let src = 'rand', cur = null, tries = 0, wins = 0, solved = false;
+
+  // ---------- lecture ----------
+  function randomReading() {
+    const modes = ['DCV', 'DCV', 'DCI', 'DCI', 'OHM', 'CAP'];
+    const mode = modes[Math.floor(Math.random() * modes.length)];
+    const list = E.RANGES[mode].filter(r => r.spec);
+    const rg = list[Math.floor(Math.random() * list.length)];
+    const lo = rg.fs * 0.06, hi = rg.fs * 0.95;
+    let v = Math.exp(Math.log(lo) + Math.random() * (Math.log(hi) - Math.log(lo))) * rg.k;
+    const r = E.resOf(rg);
+    v = Math.round(v / r) * r;
+    if ((mode === 'DCV' || mode === 'DCI') && Math.random() < 0.2) v = -v;
+    return { mode, rg, dv: v, text: (v < 0 ? '-' : '') + Math.abs(v).toFixed(rg.dec) };
+  }
+  function meterReading(m) {
+    const d = API.getDisp()[m], st = API.getS().meters[m];
+    if (!d) return { empty: `Multimètre ${m.slice(2)} éteint ou sans lecture. Allumez-le et branchez-le, puis cliquez « Nouvelle lecture ».` };
+    if (d.dv == null) return { empty: `Multimètre ${m.slice(2)} : dépassement (OL). Changez d’échelle.` };
+    if (!d.rg.spec) return { empty: `Échelle ${d.rg.label} : pas de spécification sur la fiche du SDM3055. Changez d’échelle.` };
+    if (st.mode === 'ACV' || st.mode === 'ACI') return { empty: 'Les fonctions CA ne sont pas simulées : passez en DCV, DCI, Ω 2W ou CAP.' };
+    return { mode: st.mode, rg: d.rg, dv: d.dv, text: d.text };
+  }
+  function load() {
+    cur = src === 'rand' ? randomReading() : meterReading(src);
+    solved = false; fb.innerHTML = ''; inR.value = ''; inD.value = '';
+    inR.className = inD.className = '';
+    drawLcd(); markSheet();
+  }
+  function drawLcd() {
+    const u = cur && !cur.empty ? cur.rg.unit : '';
+    panel.querySelectorAll('[data-u]').forEach(el => { el.textContent = u ? `(${u})` : ''; });
+    if (!cur || cur.empty) { lcd.innerHTML = `<span class="empty">${cur ? cur.empty : ''}</span>`; return; }
+    lcd.innerHTML = `<div class="fn"><span>${FN[cur.mode]}</span><span>${src === 'rand' ? 'EXERCICE' : 'MULTIMÈTRE ' + src.slice(2)}</span></div>
+      <div class="val">${comma(cur.text)}<small>${cur.rg.unit}</small></div>
+      <div class="rg">Échelle : ${cur.rg.label}</div>`;
+  }
+
+  // ---------- correction ----------
+  function expected() {
+    const rg = cur.rg, r = E.resOf(rg), d = E.uncertainty(rg, cur.dv);
+    return { r, d, rg };
+  }
+  function solutionHTML() {
+    const { r, d, rg } = expected();
+    const L = Math.abs(cur.dv).toFixed(rg.dec), rs = r.toFixed(rg.dec);
+    const add = rg.add ? ` + ${comma(rg.add)} ${rg.unit} <span class="muted">(0,2 Ω du mode 2 fils)</span>` : '';
+    const dR = Number(d.toPrecision(2));
+    return `<div>Fiche : ${cur.mode === 'OHM' ? 'Ω (4W)' : cur.mode}, échelle ${rg.label} → (${comma(rg.spec[0])} % |lect.| + ${rg.spec[1]} r)${rg.add ? ' + 0,2 Ω' : ''}</div>
+      <div>r = ${comma(rs)} ${rg.unit} (dernier chiffre affiché)</div>
+      <div>δ = ${comma(rg.spec[0])}/100 × ${comma(L)} + ${rg.spec[1]} × ${comma(rs)}${add} = <b>${sig(d, 3)} ${rg.unit}</b></div>
+      <div>Résultat : (${comma(cur.text)} ± ${sig(dR, 2)}) ${rg.unit}</div>`;
+  }
+  function check(e) {
+    e.preventDefault();
+    if (!cur || cur.empty) return;
+    const { r, d } = expected();
+    const ur = parseNum(inR.value), ud = Math.abs(parseNum(inD.value));
+    const okR = !isNaN(ur) && Math.abs(ur - r) <= r * 1e-6;
+    const okD = !isNaN(ud) && Math.abs(ud - d) <= 0.12 * d;
+    inR.className = isNaN(ur) ? '' : okR ? 'ok' : 'bad';
+    inD.className = isNaN(ud) ? '' : okD ? 'ok' : 'bad';
+    if (!solved) { tries++; if (okR && okD) wins++; }
+    if (okR && okD) solved = true;
+    $('unc-score').textContent = `Réussies : ${wins} / ${tries}`;
+    let h = okR && okD ? '<div class="good">Correct.</div>' : '';
+    if (!okR) h += `<div class="wrong">Résolution incorrecte${isNaN(ur) ? ' ou manquante' : ''}. Regardez le nombre de décimales affichées pour l’échelle ${cur.rg.label}.</div>`;
+    if (!okD) h += `<div class="wrong">Incertitude incorrecte${isNaN(ud) ? ' ou manquante' : ''}. Vérifiez la ligne de la fiche pour cette fonction et cette échelle.</div>`;
+    if (okR && okD) h += solutionHTML();
+    fb.innerHTML = h;
+  }
+
+  // ---------- fiche technique ----------
+  function sheetHTML() {
+    const row = (mode, rg) => {
+      const r = E.resOf(rg);
+      return `<tr data-k="${mode}|${rg.label}"><td class="n">${rg.label}</td><td class="n">${comma(r.toFixed(rg.dec))} ${rg.unit}</td><td class="n">( ${comma(rg.spec[0])} % |lect.| + ${rg.spec[1]} r )</td></tr>`;
+    };
+    const group = (mode, title) => {
+      const list = E.RANGES[mode].filter(r => r.spec);
+      return `<tbody><tr><th scope="rowgroup" rowspan="${list.length + 1}">${title}</th></tr>${list.map(rg => row(mode, rg)).join('')}</tbody>`;
+    };
+    const ac = (title, head, rows) => `<tbody><tr><th scope="rowgroup" rowspan="${rows.length + 1}">${title}</th><td colspan="3" class="muted">${head}</td></tr>${rows.map(r => `<tr><td class="n">${r[0]}</td><td class="n">${r[1]}</td><td class="n">${r[2]}</td></tr>`).join('')}</tbody>`;
+    return `<div class="sheet-wrap"><table class="sheet">
+      <caption>Fiche technique du Siglent SDM3055</caption>
+      <thead><tr><th>Fonction</th><th>Échelle</th><th>Résolution (r)</th><th>Incertitude</th></tr></thead>
+      ${group('DCV', 'DCV<br>Tension CC')}
+      ${group('DCI', 'DCI<br>Courant CC')}
+      ${group('OHM', 'Ω 4W<br>Résistance')}
+      <tbody class="note"><tr><th scope="rowgroup">Ω 2W</th><td colspan="3">Pour le mode Ω 2W, ajouter 0,2 Ω à l’incertitude ci-dessus.</td></tr></tbody>
+      ${ac('ACV<br>Tension CA', '20 Hz – 45 Hz : (1,5 % |lect.| + 200 r) · 45 Hz – 20 kHz : (0,2 % |lect.| + 100 r)', [['200 mV', '0,001 mV', ''], ['2 V', '0,000 01 V', ''], ['20 V', '0,000 1 V', ''], ['200 V', '0,001 V', '']])}
+      ${ac('ACI<br>Courant CA', '20 Hz – 45 Hz : 1,5 % |lect.| · 45 Hz – 2 kHz : 0,5 % |lect.| · 2 kHz – 10 kHz : 2,5 % |lect.| (+ n r ci-dessous)', [['20 mA', '0,000 1 mA', '+ 200 r / 200 r / 400 r'], ['200 mA', '0,001 mA', '+ 200 r / 200 r / 400 r'], ['2 A', '0,000 01 A', '+ 400 r / 400 r / 400 r'], ['10 A', '0,000 1 A', '+ 150 r / 150 r / 200 r']])}
+      ${group('CAP', 'Capacité')}
+    </table></div>
+    <p class="muted unc-note">La ligne surlignée correspond à la lecture de l’exercice. Les fonctions CA sont listées pour référence : le simulateur n’a que des alimentations continues.</p>`;
+  }
+  function markSheet() {
+    const k = cur && !cur.empty ? `${cur.mode}|${cur.rg.label}` : '';
+    $('unc-sheet').querySelectorAll('tr[data-k]').forEach(tr => tr.classList.toggle('cur', tr.dataset.k === k));
+  }
+
+  // ---------- liaisons ----------
+  $('unc-sheet').innerHTML = sheetHTML();
+  btn.addEventListener('click', () => {
+    panel.hidden = !panel.hidden; btn.setAttribute('aria-expanded', String(!panel.hidden));
+    if (!panel.hidden) { if (!cur || src !== 'rand') load(); panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+  });
+  panel.querySelectorAll('input[name="uncsrc"]').forEach(r => r.addEventListener('change', () => { src = r.value; load(); }));
+  $('unc-new').addEventListener('click', load);
+  $('unc-show').addEventListener('click', () => { if (!cur || cur.empty) return; solved = true; fb.innerHTML = solutionHTML(); });
+  $('unc-form').addEventListener('submit', check);
+  const tabs = [[$('tab-ex'), $('unc-ex')], [$('tab-sheet'), $('unc-sheet')]];
+  tabs.forEach(([t]) => t.addEventListener('click', () => tabs.forEach(([b, p]) => { const on = b === t; b.setAttribute('aria-selected', String(on)); p.hidden = !on; })));
+})();
 </script>
 </body>
 </html>
