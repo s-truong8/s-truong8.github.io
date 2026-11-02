@@ -5,21 +5,74 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Simulateur de platine – Électricité et magnétisme</title>
 <style>
-  :root { --bg:#f3f4f6; --ink:#1f2328; --muted:#5f6670; --line:#d5d8dd; --accent:#b8860b; }
-  * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
-  header { padding:12px 16px 8px; border-bottom:1px solid var(--line); background:#fff; }
-  h1 { font-size:17px; margin:0 0 8px; font-weight:650; }
-  .tb { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; }
-  .grp { display:inline-flex; gap:6px; align-items:center; padding:3px 8px; border:1px solid var(--line); border-radius:8px; background:#fafbfc; }
-  button, select { font:inherit; font-size:13px; padding:4px 9px; border:1px solid #b9bec6; border-radius:6px; background:#fff; color:var(--ink); cursor:pointer; }
-  button:hover { background:#f1f3f6; }
-  .sw { width:22px; height:22px; padding:0; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px #9aa0a8; }
-  .sw.on { box-shadow:0 0 0 2px #1f2328; }
-  .sw.auto { width:auto; border-radius:11px; padding:0 8px; font-size:12px; box-shadow:0 0 0 1px #9aa0a8; }
-  .sw.auto.on { box-shadow:0 0 0 2px #1f2328; }
-  #wrap { padding:10px 12px 0; }
-  #sv { width:100%; max-width:1500px; display:block; margin:0 auto; touch-action:none; user-select:none; -webkit-user-select:none; background:#e6e8eb; border-radius:10px; }
+  :root {
+    --bg:#EEF0F3; --surface:#FFFFFF; --ink:#16181D; --muted:#5A606B; --line:#DCE0E6; --line-strong:#C3C8D0;
+    --chrome:#0E0F12; --chrome-ink:#ECECE6; --chrome-muted:#9A9DA6; --accent:#C6F432;
+    --primary:#2348C9; --primary-hover:#1B3AA6; --focus:#2348C9;
+    --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --radius:10px;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+
+  /* ---------- top bar ---------- */
+  .appbar { background:var(--chrome); color:var(--chrome-ink); }
+  .appbar-in { max-width:1500px; margin:0 auto; padding:12px 20px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px 20px; }
+  .brand { display:flex; align-items:center; gap:16px; min-width:0; }
+  .back { display:inline-flex; align-items:center; gap:6px; min-height:36px; padding:0 12px; border-radius:8px; border:1px solid #2C2F37; color:var(--chrome-ink); text-decoration:none; font-family:var(--mono); font-size:12px; transition:border-color .15s, color .15s; }
+  .back:hover { border-color:var(--accent); color:var(--accent); }
+  h1 { margin:0; font-size:17px; font-weight:650; letter-spacing:-.01em; line-height:1.2; }
+  h1 small { display:block; font-family:var(--mono); font-size:11px; font-weight:400; letter-spacing:.06em; text-transform:uppercase; color:var(--chrome-muted); margin-top:3px; }
+  .app-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; }
+  .appbar button { background:transparent; color:var(--chrome-ink); border-color:#3A3D46; }
+  .appbar button:hover { background:#1C1E24; border-color:#5A5E68; }
+  .appbar button[aria-expanded="true"] { border-color:var(--chrome-ink); }
+  .appbar .primary { background:var(--accent); color:var(--chrome); border-color:var(--accent); font-weight:650; }
+  .appbar .primary:hover { background:#B4E12A; border-color:#B4E12A; }
+  .appbar .primary.on { background:transparent; color:var(--accent); }
+
+  /* switch (Mode étude) */
+  label.chk { display:inline-flex; gap:10px; align-items:center; cursor:pointer; font-size:13px; min-height:36px; }
+  label.chk input { appearance:none; -webkit-appearance:none; margin:0; width:36px; height:20px; border-radius:999px; background:#3A3D46; position:relative; cursor:pointer; transition:background .2s; flex:none; }
+  label.chk input::after { content:""; position:absolute; top:3px; left:3px; width:14px; height:14px; border-radius:50%; background:#fff; transition:transform .2s; }
+  label.chk input:checked { background:var(--accent); }
+  label.chk input:checked::after { transform:translateX(16px); background:var(--chrome); }
+  label.chk input:disabled { opacity:.4; cursor:not-allowed; }
+  label.chk small { color:var(--chrome-muted); }
+
+  /* ---------- toolbar ---------- */
+  .toolbar { background:var(--surface); border-bottom:1px solid var(--line); }
+  .toolbar-in { max-width:1500px; margin:0 auto; padding:10px 20px 12px; display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px 24px; }
+  .section { display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .section.wide { flex-basis:100%; padding-top:10px; border-top:1px solid var(--line); }
+  .section.push { margin-left:auto; }
+  .section-label { font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .grp { display:inline-flex; align-items:stretch; border:1px solid var(--line-strong); border-radius:8px; background:#fff; overflow:hidden; }
+  .grp .lbl { display:inline-flex; align-items:center; padding:0 10px; font-size:13px; color:var(--muted); background:#F6F7F9; border-right:1px solid var(--line); }
+  .grp select { border:0; border-radius:0; background-color:transparent; }
+  .grp button { border:0; border-left:1px solid var(--line); border-radius:0; }
+
+  button, select { font:inherit; font-size:13px; min-height:36px; padding:0 12px; border:1px solid var(--line-strong); border-radius:8px; background:#fff; color:var(--ink); cursor:pointer; transition:background .15s, border-color .15s, color .15s; }
+  select { padding-right:28px; appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%235A606B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; }
+  button:hover { background:#F1F3F6; }
+  .place { font-weight:600; color:var(--primary); }
+  .place::before { content:"+ "; }
+  button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+  .appbar button:focus-visible, .appbar a:focus-visible, .appbar input:focus-visible { outline-color:var(--accent); }
+  .danger:hover { color:#B02A2A; border-color:#E2A4A4; background:#FDF1F1; }
+  #preset { min-width:220px; font-weight:500; }
+
+  /* wire colour swatches */
+  .sw { width:28px; min-height:28px; height:28px; padding:0; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px var(--line-strong); }
+  .sw:hover { box-shadow:0 0 0 1px var(--ink); }
+  .sw.on { box-shadow:0 0 0 2px var(--ink); }
+  .sw.auto { width:auto; border-radius:999px; padding:0 12px; font-size:12px; font-family:var(--mono); background:#fff; }
+  .sw.auto.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+
+  /* ---------- workspace ---------- */
+  #wrap { padding:16px 16px 0; }
+  #sv { width:100%; max-width:1500px; display:block; margin:0 auto; touch-action:none; user-select:none; -webkit-user-select:none; background:#E6E8EB; border-radius:14px; box-shadow:0 1px 2px rgba(16,24,40,.06), 0 8px 24px rgba(16,24,40,.06); border:1px solid var(--line); }
   #sv .hole, #sv .knob, #sv .btn { cursor:pointer; }
   #sv .part { cursor:grab; }
   #sv .wire { cursor:pointer; }
@@ -28,70 +81,109 @@
   #sv .btn:active rect { filter:brightness(.9); }
   #sv text { user-select:none; }
   #sv .lcd { font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace; font-weight:600; }
-  #bar { max-width:1500px; margin:8px auto 24px; padding:0 12px; }
-  #status { color:var(--muted); font-size:13px; min-height:20px; }
-  #info { margin-top:6px; background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px 12px; display:grid; gap:6px; }
+
+  #bar { max-width:1500px; margin:12px auto 32px; padding:0 16px; display:grid; gap:10px; }
+  #status { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px; min-height:22px; }
+  #status::before { content:""; width:8px; height:8px; border-radius:50%; background:#2A9D4A; flex:none; box-shadow:0 0 0 3px rgba(42,157,74,.15); }
+  #info { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; display:grid; gap:8px; }
+  #info:empty { display:none; }
   #info .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   .muted { color:var(--muted); }
-  .warn { color:#8a4b00; background:#fff4e0; border:1px solid #f2d39b; border-radius:6px; padding:5px 8px; }
-  .study { color:#5b4500; background:#fff9e3; border:1px solid #efe0a8; border-radius:6px; padding:5px 8px; font-variant-numeric:tabular-nums; }
-  #helpbox { margin-top:8px; background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px 16px; }
-  #helpbox h2 { font-size:14px; margin:6px 0; }
-  #helpbox ul { margin:4px 0 8px; padding-left:20px; }
-  .primary { background:#1f4e8c; color:#fff; border-color:#1f4e8c; font-weight:600; }
-  .primary:hover { background:#173d6e; }
+  .warn { color:#7A4300; background:#FFF4E0; border:1px solid #F2D39B; border-radius:8px; padding:8px 10px; }
+  .study { color:#4F3D00; background:#FFF9E3; border:1px solid #EFE0A8; border-radius:8px; padding:8px 10px; font-variant-numeric:tabular-nums; }
+
+  #helpbox { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:6px 20px 12px; columns:2 380px; column-gap:40px; }
+  #helpbox h2 { font-size:12px; font-family:var(--mono); font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--primary); margin:14px 0 6px; break-after:avoid; }
+  #helpbox ul { margin:0 0 6px; padding-left:18px; break-inside:avoid-column; }
+  #helpbox li { margin-bottom:4px; }
+
+  .primary { background:var(--primary); color:#fff; border-color:var(--primary); font-weight:600; }
+  .primary:hover { background:var(--primary-hover); border-color:var(--primary-hover); }
   button:disabled, select:disabled, input:disabled { opacity:.45; cursor:not-allowed; }
+
+  /* ---------- exam panel ---------- */
   #main { display:grid; grid-template-columns:minmax(0,1fr); gap:0; }
-  body.exam-on #main { grid-template-columns:minmax(0,1fr) 410px; }
-  #exam { position:sticky; top:0; align-self:start; max-height:100vh; overflow:auto; background:#fff; border-left:1px solid var(--line); padding:12px 14px 40px; }
+  body.exam-on #main { grid-template-columns:minmax(0,1fr) 420px; }
+  #exam { position:sticky; top:0; align-self:start; max-height:100vh; overflow:auto; background:var(--surface); border-left:1px solid var(--line); padding:16px 18px 40px; }
   @media (max-width: 1100px) { body.exam-on #main { grid-template-columns:minmax(0,1fr); } #exam { position:static; max-height:none; border-left:0; border-top:1px solid var(--line); } }
-  .ex-head { display:flex; align-items:center; gap:8px; justify-content:space-between; margin-bottom:8px; }
-  .ex-head h2 { font-size:15px; margin:0; }
-  .ex-timer { font-variant-numeric:tabular-nums; color:var(--muted); font-size:13px; }
-  .ex-setup { background:#eef4fb; border:1px solid #cfe0f3; border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:13px; }
-  .q { border:1px solid var(--line); border-radius:8px; padding:9px 10px; margin-bottom:9px; }
-  .q .qt { margin-bottom:6px; }
-  .q .qn { font-weight:700; margin-right:4px; }
-  .fields { display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; }
-  .fields label { display:inline-flex; gap:4px; align-items:center; font-size:13px; }
-  .fields input { width:92px; font:inherit; font-size:13px; padding:3px 6px; border:1px solid #b9bec6; border-radius:5px; font-variant-numeric:tabular-nums; }
-  .fields select { max-width:100%; }
-  .fields .ok { border-color:#2a9d4a; background:#ecf8ef; }
-  .fields .bad { border-color:#d23c3c; background:#fdeeee; }
-  .fb { margin-top:6px; font-size:12.5px; color:#3b4048; display:grid; gap:2px; }
-  .fb .good { color:#1e7a3a; } .fb .wrong { color:#b02a2a; }
-  .fb .exp { color:#5f6670; }
-  .score { font-size:15px; font-weight:700; margin:8px 0; }
-  .ex-list { display:grid; gap:6px; margin:8px 0; }
-  .ex-list button { text-align:left; }
-  .ex-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
-  label.chk { display:inline-flex; gap:5px; align-items:center; cursor:pointer; }
+  .ex-head { display:flex; align-items:center; gap:8px; justify-content:space-between; margin-bottom:12px; }
+  .ex-head h2 { font-size:16px; margin:0; letter-spacing:-.01em; }
+  .ex-timer { font-family:var(--mono); font-variant-numeric:tabular-nums; color:var(--muted); font-size:13px; padding:4px 10px; background:#F1F3F6; border-radius:999px; }
+  .ex-setup { background:#EEF3FF; border:1px solid #CFDAF7; border-radius:8px; padding:10px 12px; margin-bottom:12px; font-size:13px; }
+  .q { border:1px solid var(--line); border-radius:var(--radius); padding:12px; margin-bottom:10px; }
+  .q .qt { margin-bottom:8px; }
+  .q .qn { font-family:var(--mono); font-weight:600; color:var(--primary); margin-right:4px; }
+  .fields { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; }
+  .fields label { display:inline-flex; gap:6px; align-items:center; font-size:13px; }
+  .fields input { width:96px; font:inherit; font-size:13px; min-height:32px; padding:0 8px; border:1px solid var(--line-strong); border-radius:6px; font-variant-numeric:tabular-nums; }
+  .fields select { max-width:100%; min-height:32px; }
+  .fields .ok { border-color:#2A9D4A; background:#ECF8EF; }
+  .fields .bad { border-color:#D23C3C; background:#FDEEEE; }
+  .fb { margin-top:8px; font-size:12.5px; color:#3B4048; display:grid; gap:3px; }
+  .fb .good { color:#1E7A3A; } .fb .wrong { color:#B02A2A; }
+  .fb .exp { color:var(--muted); }
+  .score { font-size:16px; font-weight:700; margin:10px 0; }
+  .ex-list { display:grid; gap:8px; margin:10px 0; }
+  .ex-list button { text-align:left; min-height:44px; }
+  .ex-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+
+  @media (max-width: 760px) {
+    .section.push { margin-left:0; }
+    label.chk small { display:none; }
+    .toolbar-in, .appbar-in { padding-left:16px; padding-right:16px; }
+    #preset { min-width:0; width:100%; }
+    .section { width:100%; }
+    #wrap { padding:12px 8px 0; }
+    #bar { padding:0 12px; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1>Simulateur de platine · alimentations et multimètres</h1>
-  <div class="tb">
-    <select id="preset" aria-label="Charger un circuit"></select>
-    <span class="grp">Résistance <select id="rval"></select><button data-add="R">Placer</button></span>
-    <span class="grp">Condensateur <select id="cval"></select><button data-add="C">Placer</button></span>
-    <button data-add="S">Placer un connecteur</button>
-    <span class="grp">Ampoule <select id="lval"></select><button data-add="L">Placer</button></span>
-    <button data-add="K">Placer un interrupteur</button>
-    <span class="grp">Fil
-      <button class="sw auto on" data-col="auto">auto</button>
-      <button class="sw" data-col="red" style="background:#d42a2a" aria-label="rouge"></button>
-      <button class="sw" data-col="black" style="background:#1d1d1d" aria-label="noir"></button>
-      <button class="sw" data-col="yellow" style="background:#e8c31c" aria-label="jaune"></button>
-      <button class="sw" data-col="blue" style="background:#2a63d4" aria-label="bleu"></button>
-    </span>
-    <label class="chk"><input type="checkbox" id="study"> Mode étude (incertitudes et conseils)</label>
-    <button id="reroll">Nouveau tirage des tolérances</button>
-    <button id="clear">Tout effacer</button>
-    <button id="help">Aide</button>
-    <button id="examBtn" class="primary">Mode examen</button>
+<header class="appbar">
+  <div class="appbar-in">
+    <div class="brand">
+      <a class="back" href="../index.html" aria-label="Retour aux projets">← Projets</a>
+      <h1>Simulateur de platine<small>Alimentations et multimètres</small></h1>
+    </div>
+    <div class="app-actions">
+      <label class="chk"><input type="checkbox" id="study"> Mode étude <small>incertitudes et conseils</small></label>
+      <button id="help" type="button" aria-expanded="false" aria-controls="helpbox">Aide</button>
+      <button id="examBtn" type="button" class="primary">Mode examen</button>
+    </div>
   </div>
 </header>
+<nav class="toolbar" aria-label="Outils">
+  <div class="toolbar-in">
+    <div class="section">
+      <span class="section-label">Circuit</span>
+      <div class="row">
+        <select id="preset" aria-label="Charger un circuit"></select>
+        <button id="reroll" type="button" title="Tirer de nouvelles valeurs réelles dans les tolérances">Nouveau tirage</button>
+        <button id="clear" type="button" class="danger">Tout effacer</button>
+      </div>
+    </div>
+    <div class="section push">
+      <span class="section-label">Couleur du fil</span>
+      <div class="row">
+        <button type="button" class="sw auto on" data-col="auto">auto</button>
+        <button type="button" class="sw" data-col="red" style="background:#d42a2a" aria-label="rouge"></button>
+        <button type="button" class="sw" data-col="black" style="background:#1d1d1d" aria-label="noir"></button>
+        <button type="button" class="sw" data-col="yellow" style="background:#e8c31c" aria-label="jaune"></button>
+        <button type="button" class="sw" data-col="blue" style="background:#2a63d4" aria-label="bleu"></button>
+      </div>
+    </div>
+    <div class="section wide">
+      <span class="section-label">Composants</span>
+      <div class="row">
+        <span class="grp"><span class="lbl">Résistance</span><select id="rval" aria-label="Valeur de la résistance"></select><button type="button" class="place" data-add="R">Placer</button></span>
+        <span class="grp"><span class="lbl">Condensateur</span><select id="cval" aria-label="Valeur du condensateur"></select><button type="button" class="place" data-add="C">Placer</button></span>
+        <span class="grp"><span class="lbl">Ampoule</span><select id="lval" aria-label="Type d’ampoule"></select><button type="button" class="place" data-add="L">Placer</button></span>
+        <button type="button" class="place" data-add="S">Connecteur</button>
+        <button type="button" class="place" data-add="K">Interrupteur</button>
+      </div>
+    </div>
+  </div>
+</nav>
 <div id="main"><div id="left">
 <div id="wrap"><svg id="sv" xmlns="http://www.w3.org/2000/svg"></svg></div>
 <div id="bar">
@@ -1141,7 +1233,7 @@ if (typeof module !== 'undefined') module.exports = Presets;
     S.parts = []; S.wires = []; S.preset = null; ui.sel = null; cancel(); update();
   });
   const helpBox = document.getElementById('helpbox');
-  document.getElementById('help').addEventListener('click', () => { helpBox.hidden = !helpBox.hidden; });
+  document.getElementById('help').addEventListener('click', e => { helpBox.hidden = !helpBox.hidden; e.currentTarget.setAttribute('aria-expanded', String(!helpBox.hidden)); });
   infoEl.addEventListener('click', e => {
     const b = e.target.closest('[data-act]'); if (!b) return;
     if (b.dataset.act === 'del') return deleteSel();
