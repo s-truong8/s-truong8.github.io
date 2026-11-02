@@ -1,0 +1,1523 @@
+<!DOCTYPE html>
+<html lang="fr-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulateur de platine – Électricité et magnétisme</title>
+<style>
+  :root { --bg:#f3f4f6; --ink:#1f2328; --muted:#5f6670; --line:#d5d8dd; --accent:#b8860b; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  header { padding:12px 16px 8px; border-bottom:1px solid var(--line); background:#fff; }
+  h1 { font-size:17px; margin:0 0 8px; font-weight:650; }
+  .tb { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; }
+  .grp { display:inline-flex; gap:6px; align-items:center; padding:3px 8px; border:1px solid var(--line); border-radius:8px; background:#fafbfc; }
+  button, select { font:inherit; font-size:13px; padding:4px 9px; border:1px solid #b9bec6; border-radius:6px; background:#fff; color:var(--ink); cursor:pointer; }
+  button:hover { background:#f1f3f6; }
+  .sw { width:22px; height:22px; padding:0; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px #9aa0a8; }
+  .sw.on { box-shadow:0 0 0 2px #1f2328; }
+  .sw.auto { width:auto; border-radius:11px; padding:0 8px; font-size:12px; box-shadow:0 0 0 1px #9aa0a8; }
+  .sw.auto.on { box-shadow:0 0 0 2px #1f2328; }
+  #wrap { padding:10px 12px 0; }
+  #sv { width:100%; max-width:1500px; display:block; margin:0 auto; touch-action:none; user-select:none; -webkit-user-select:none; background:#e6e8eb; border-radius:10px; }
+  #sv .hole, #sv .knob, #sv .btn { cursor:pointer; }
+  #sv .part { cursor:grab; }
+  #sv .wire { cursor:pointer; }
+  #sv .toggle { cursor:pointer; }
+  #sv .ghost { opacity:.55; pointer-events:none; }
+  #sv .btn:active rect { filter:brightness(.9); }
+  #sv text { user-select:none; }
+  #sv .lcd { font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace; font-weight:600; }
+  #bar { max-width:1500px; margin:8px auto 24px; padding:0 12px; }
+  #status { color:var(--muted); font-size:13px; min-height:20px; }
+  #info { margin-top:6px; background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px 12px; display:grid; gap:6px; }
+  #info .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .muted { color:var(--muted); }
+  .warn { color:#8a4b00; background:#fff4e0; border:1px solid #f2d39b; border-radius:6px; padding:5px 8px; }
+  .study { color:#5b4500; background:#fff9e3; border:1px solid #efe0a8; border-radius:6px; padding:5px 8px; font-variant-numeric:tabular-nums; }
+  #helpbox { margin-top:8px; background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px 16px; }
+  #helpbox h2 { font-size:14px; margin:6px 0; }
+  #helpbox ul { margin:4px 0 8px; padding-left:20px; }
+  .primary { background:#1f4e8c; color:#fff; border-color:#1f4e8c; font-weight:600; }
+  .primary:hover { background:#173d6e; }
+  button:disabled, select:disabled, input:disabled { opacity:.45; cursor:not-allowed; }
+  #main { display:grid; grid-template-columns:minmax(0,1fr); gap:0; }
+  body.exam-on #main { grid-template-columns:minmax(0,1fr) 410px; }
+  #exam { position:sticky; top:0; align-self:start; max-height:100vh; overflow:auto; background:#fff; border-left:1px solid var(--line); padding:12px 14px 40px; }
+  @media (max-width: 1100px) { body.exam-on #main { grid-template-columns:minmax(0,1fr); } #exam { position:static; max-height:none; border-left:0; border-top:1px solid var(--line); } }
+  .ex-head { display:flex; align-items:center; gap:8px; justify-content:space-between; margin-bottom:8px; }
+  .ex-head h2 { font-size:15px; margin:0; }
+  .ex-timer { font-variant-numeric:tabular-nums; color:var(--muted); font-size:13px; }
+  .ex-setup { background:#eef4fb; border:1px solid #cfe0f3; border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:13px; }
+  .q { border:1px solid var(--line); border-radius:8px; padding:9px 10px; margin-bottom:9px; }
+  .q .qt { margin-bottom:6px; }
+  .q .qn { font-weight:700; margin-right:4px; }
+  .fields { display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; }
+  .fields label { display:inline-flex; gap:4px; align-items:center; font-size:13px; }
+  .fields input { width:92px; font:inherit; font-size:13px; padding:3px 6px; border:1px solid #b9bec6; border-radius:5px; font-variant-numeric:tabular-nums; }
+  .fields select { max-width:100%; }
+  .fields .ok { border-color:#2a9d4a; background:#ecf8ef; }
+  .fields .bad { border-color:#d23c3c; background:#fdeeee; }
+  .fb { margin-top:6px; font-size:12.5px; color:#3b4048; display:grid; gap:2px; }
+  .fb .good { color:#1e7a3a; } .fb .wrong { color:#b02a2a; }
+  .fb .exp { color:#5f6670; }
+  .score { font-size:15px; font-weight:700; margin:8px 0; }
+  .ex-list { display:grid; gap:6px; margin:8px 0; }
+  .ex-list button { text-align:left; }
+  .ex-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  label.chk { display:inline-flex; gap:5px; align-items:center; cursor:pointer; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Simulateur de platine · alimentations et multimètres</h1>
+  <div class="tb">
+    <select id="preset" aria-label="Charger un circuit"></select>
+    <span class="grp">Résistance <select id="rval"></select><button data-add="R">Placer</button></span>
+    <span class="grp">Condensateur <select id="cval"></select><button data-add="C">Placer</button></span>
+    <button data-add="S">Placer un connecteur</button>
+    <span class="grp">Ampoule <select id="lval"></select><button data-add="L">Placer</button></span>
+    <button data-add="K">Placer un interrupteur</button>
+    <span class="grp">Fil
+      <button class="sw auto on" data-col="auto">auto</button>
+      <button class="sw" data-col="red" style="background:#d42a2a" aria-label="rouge"></button>
+      <button class="sw" data-col="black" style="background:#1d1d1d" aria-label="noir"></button>
+      <button class="sw" data-col="yellow" style="background:#e8c31c" aria-label="jaune"></button>
+      <button class="sw" data-col="blue" style="background:#2a63d4" aria-label="bleu"></button>
+    </span>
+    <label class="chk"><input type="checkbox" id="study"> Mode étude (incertitudes et conseils)</label>
+    <button id="reroll">Nouveau tirage des tolérances</button>
+    <button id="clear">Tout effacer</button>
+    <button id="help">Aide</button>
+    <button id="examBtn" class="primary">Mode examen</button>
+  </div>
+</header>
+<div id="main"><div id="left">
+<div id="wrap"><svg id="sv" xmlns="http://www.w3.org/2000/svg"></svg></div>
+<div id="bar">
+  <div id="status"></div>
+  <div id="info"></div>
+  <div id="helpbox" hidden>
+    <h2>Platine</h2>
+    <ul>
+      <li>16 nœuds. Les 5 douilles d’une croix (centre + 4 bras) sont reliées entre elles ; les trous gris ne conduisent pas.</li>
+      <li><b>Placer :</b> choisissez la valeur, cliquez « Placer », visez l’endroit où doit se trouver le <i>milieu</i> de la plaquette, puis cliquez. Une plaquette couvre 2 trous (centre d’un nœud → bras du voisin) ; un connecteur relie deux bras voisins.</li>
+      <li><b>Déplacer :</b> glissez le corps du composant. <b>Supprimer :</b> sélectionnez-le, puis touche Suppr ou bouton « Supprimer ».</li>
+      <li><b>Fil :</b> cliquez une douille (ou une vis de plaquette) ou une borne d’appareil, puis une autre. Les fiches s’empilent. Échap annule.</li>
+    </ul>
+    <h2>Alimentation</h2>
+    <ul>
+      <li>⏻ allume. Bouton VOLTAGE (6) : un clic change le chiffre réglé (triangle), la molette ou ↺ ↻ change la valeur ; maintenir 3 s = LOCK.</li>
+      <li>Bouton CURRENT (5) : maintenir 3 s = mode OCP, où l’afficheur jaune montre la limite de courant à régler ; maintenir 3 s de nouveau pour revenir à l’affichage du courant débité.</li>
+      <li>Voyant CV = tension constante (normal). Voyant CC = la limite de courant est atteinte : la tension de sortie chute sous la consigne.</li>
+    </ul>
+    <h2>Multimètre</h2>
+    <ul>
+      <li>DCV, SHIFT puis DCV = DCI, Ω2W, CAP. AUTO bascule entre échelle automatique et manuelle ; ▲ ▼ changent l’échelle (passe en manuel).</li>
+      <li>Bornes : A (V, Ω), B (LO, référence), C (courant). La lecture est V(borne rouge) − V(borne B) ; en DCI, une valeur positive veut dire que le courant entre par C.</li>
+      <li>Voltmètre : 10 MΩ en parallèle. Ampèremètre : petite résistance en série. Ohmmètre : il injecte son propre courant, donc il faut mesurer hors tension.</li>
+    </ul>
+    <h2>Réalisme</h2>
+    <ul>
+      <li>Chaque résistance a une vraie valeur tirée dans sa tolérance (±5 %) ; chaque alimentation a un léger décalage. « Nouveau tirage » en tire d’autres.</li>
+      <li>Le condensateur est simulé en régime permanent (chargé, aucun courant).</li>
+      <li>L’ampoule n’est pas ohmique : la résistance du filament augmente avec la tension (environ dix fois plus faible à froid). Son éclat suit la puissance dissipée ; au-delà d’environ 1,6 × sa tension nominale, elle grille. Pensez à relever la limite de courant de l’alimentation : à 10 mA, une ampoule de 0,1 A reste presque éteinte.</li>
+      <li>Interrupteur : cliquez sur son levier pour l’ouvrir ou le fermer.</li>
+      <li>Le mode étude affiche l’incertitude de chaque lecture avec les formules du cours, et signale les erreurs de branchement.</li>
+    </ul>
+  </div>
+</div>
+</div>
+<aside id="exam" hidden><div id="exam-body"></div></aside>
+</div>
+<script>
+// ===================== Moteur électrique (MNA, régime continu) =====================
+const Engine = (() => {
+  const GMIN = 1e-12;          // fuite de 1 TΩ vers la masse sur chaque net (évite les matrices singulières)
+  const ROWS = 12, COLS = 12;  // 4 x 4 nœuds de 3 x 3 trous
+
+  function holeType(r, c) {
+    const lr = r % 3, lc = c % 3;
+    if (lr === 1 && lc === 1) return 'center';
+    if ((lr === 1) !== (lc === 1)) return 'arm';
+    return 'dead';
+  }
+  const isConductive = (r, c) => r >= 0 && c >= 0 && r < ROWS && c < COLS && holeType(r, c) !== 'dead';
+  const nodeOf = (r, c) => Math.floor(r / 3) * 4 + Math.floor(c / 3) + 1;
+  function nodeLetter(n) {
+    const nr = Math.floor((n - 1) / 4), nc = (n - 1) % 4;
+    return String.fromCharCode(65 + nc * 4 + (3 - nr));
+  }
+  const hk = (r, c) => `H:${r}:${c}`;
+
+  // Échelles. dec = décimales affichées dans l'unité de l'échelle ; spec = [% lecture, n chiffres] (formules du cours)
+  const V_RANGES = [
+    { fs: 0.2, unit: 'mV', k: 1e3, dec: 3, label: '200 mV', spec: [0.015, 8] },
+    { fs: 2, unit: 'V', k: 1, dec: 5, label: '2 V', spec: [0.015, 6] },
+    { fs: 20, unit: 'V', k: 1, dec: 4, label: '20 V', spec: [0.015, 8] },
+    { fs: 200, unit: 'V', k: 1, dec: 3, label: '200 V' },
+    { fs: 1000, unit: 'V', k: 1, dec: 2, label: '1000 V' },
+  ];
+  const I_RANGES = [
+    { fs: 200e-6, unit: 'µA', k: 1e6, dec: 3, label: '200 µA', spec: [0.055, 10], shunt: 10 },
+    { fs: 2e-3, unit: 'mA', k: 1e3, dec: 5, label: '2 mA', spec: [0.055, 10], shunt: 0.1 },
+    { fs: 20e-3, unit: 'mA', k: 1e3, dec: 4, label: '20 mA', spec: [0.095, 40], shunt: 0.1 },
+    { fs: 200e-3, unit: 'mA', k: 1e3, dec: 3, label: '200 mA', shunt: 0.05 },
+    { fs: 2, unit: 'A', k: 1, dec: 5, label: '2 A', shunt: 0.01 },
+    { fs: 10, unit: 'A', k: 1, dec: 4, label: '10 A', shunt: 0.01 },
+  ];
+  const R_RANGES = [
+    { fs: 200, unit: 'Ω', k: 1, dec: 3, label: '200 Ω', it: 1e-3 },
+    { fs: 2e3, unit: 'kΩ', k: 1e-3, dec: 5, label: '2 kΩ', it: 1e-3, spec: [0.02, 6], add: 0.0002 },
+    { fs: 2e4, unit: 'kΩ', k: 1e-3, dec: 4, label: '20 kΩ', it: 1e-4, spec: [0.02, 6], add: 0.0002 },
+    { fs: 2e5, unit: 'kΩ', k: 1e-3, dec: 3, label: '200 kΩ', it: 1e-5 },
+    { fs: 2e6, unit: 'MΩ', k: 1e-6, dec: 5, label: '2 MΩ', it: 1e-6 },
+    { fs: 1e7, unit: 'MΩ', k: 1e-6, dec: 4, label: '10 MΩ', it: 2e-7 },
+    { fs: 1e8, unit: 'MΩ', k: 1e-6, dec: 3, label: '100 MΩ', it: 2e-8, spec: [1.75, 4], add: 2e-7 },
+  ];
+  const C_RANGES = [
+    { fs: 2e-9, unit: 'nF', k: 1e9, dec: 3, label: '2 nF' },
+    { fs: 20e-9, unit: 'nF', k: 1e9, dec: 2, label: '20 nF' },
+    { fs: 200e-9, unit: 'nF', k: 1e9, dec: 1, label: '200 nF' },
+    { fs: 2e-6, unit: 'µF', k: 1e6, dec: 3, label: '2 µF' },
+    { fs: 20e-6, unit: 'µF', k: 1e6, dec: 2, label: '20 µF' },
+    { fs: 200e-6, unit: 'µF', k: 1e6, dec: 1, label: '200 µF' },
+    { fs: 2e-3, unit: 'mF', k: 1e3, dec: 3, label: '2 mF' },
+    { fs: 10e-3, unit: 'mF', k: 1e3, dec: 2, label: '10 mF' },
+  ];
+  const RANGES = { DCV: V_RANGES, ACV: V_RANGES, DCI: I_RANGES, ACI: I_RANGES, OHM: R_RANGES, CAP: C_RANGES };
+  const R_VOLTMETER = 10e6;
+
+  // incertitude dans l'unité de l'échelle (null si la spécification n'est pas donnée dans le cours)
+  function uncertainty(rg, displayValue) {
+    if (!rg.spec) return null;
+    return rg.spec[0] / 100 * Math.abs(displayValue) + rg.spec[1] * Math.pow(10, -rg.dec) + (rg.add || 0);
+  }
+
+  function makeUF() {
+    const p = new Map();
+    const find = k => {
+      if (!p.has(k)) { p.set(k, k); return k; }
+      let r = k; while (p.get(r) !== r) r = p.get(r);
+      let x = k; while (p.get(x) !== r) { const n = p.get(x); p.set(x, r); x = n; }
+      return r;
+    };
+    const union = (a, b) => { const ra = find(a), rb = find(b); if (ra !== rb) p.set(ra, rb); };
+    return { find, union, keys: () => [...p.keys()] };
+  }
+
+  function gauss(A, z) {
+    const N = z.length;
+    for (let i = 0; i < N; i++) {
+      let piv = i, best = Math.abs(A[i][i]);
+      for (let r = i + 1; r < N; r++) { const v = Math.abs(A[r][i]); if (v > best) { best = v; piv = r; } }
+      if (best < 1e-22) return null;
+      if (piv !== i) { [A[i], A[piv]] = [A[piv], A[i]]; [z[i], z[piv]] = [z[piv], z[i]]; }
+      const d = A[i][i];
+      for (let r = i + 1; r < N; r++) {
+        const f = A[r][i] / d; if (f === 0) continue;
+        const Ar = A[r], Ai = A[i];
+        for (let c = i; c < N; c++) Ar[c] -= f * Ai[c];
+        z[r] -= f * z[i];
+      }
+    }
+    const x = new Float64Array(N);
+    for (let i = N - 1; i >= 0; i--) {
+      let s = z[i]; const Ai = A[i];
+      for (let c = i + 1; c < N; c++) s -= Ai[c] * x[c];
+      x[i] = s / Ai[i];
+    }
+    for (const v of x) if (!isFinite(v)) return null;
+    return x;
+  }
+
+  // els = { G:[{a,b,g}], I:[{into,from,I}], V:[{p,n,V}] }
+  function mna(nNets, gnd, els, gmin = GMIN) {
+    const map = new Int32Array(nNets); let k = 0;
+    for (let i = 0; i < nNets; i++) map[i] = i === gnd ? -1 : k++;
+    const nv = k, m = els.V.length, N = nv + m;
+    const A = Array.from({ length: N }, () => new Float64Array(N));
+    const z = new Float64Array(N);
+    for (let i = 0; i < nv; i++) A[i][i] += gmin;
+    for (const e of els.G) {
+      const a = map[e.a], b = map[e.b];
+      if (a >= 0) A[a][a] += e.g;
+      if (b >= 0) A[b][b] += e.g;
+      if (a >= 0 && b >= 0) { A[a][b] -= e.g; A[b][a] -= e.g; }
+    }
+    for (const e of els.I) {
+      const t = map[e.into], f = map[e.from];
+      if (t >= 0) z[t] += e.I;
+      if (f >= 0) z[f] -= e.I;
+    }
+    els.V.forEach((e, j) => {
+      const row = nv + j, p = map[e.p], n = map[e.n];
+      if (p >= 0) { A[p][row] += 1; A[row][p] += 1; }
+      if (n >= 0) { A[n][row] -= 1; A[row][n] -= 1; }
+      z[row] = e.V;
+    });
+    const x = gauss(A, z);
+    if (!x) return null;
+    return {
+      v: net => (map[net] < 0 ? 0 : x[map[net]]),
+      srcI: j => x[nv + j], // courant entrant dans la borne + depuis le circuit
+    };
+  }
+
+  const ALIMS = ['alim1', 'alim2'];
+  const METERS = ['mm1', 'mm2'];
+
+  function pickRange(ranges, x) {
+    const ax = Math.abs(x);
+    for (let i = 0; i < ranges.length; i++) if (ax < ranges[i].fs) return i;
+    return ranges.length - 1;
+  }
+
+  function solve(st) {
+    const uf = makeUF();
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
+      if (isConductive(r, c)) uf.union(hk(r, c), 'N:' + nodeOf(r, c));
+    for (const a of ALIMS) for (const t of ['+', '-', 'g']) uf.find(`T:${a}:${t}`);
+    for (const m of METERS) for (const t of ['A', 'B', 'C']) uf.find(`T:${m}:${t}`);
+    for (const p of st.parts) if (p.kind === 'S' || (p.kind === 'K' && p.closed)) uf.union(hk(...p.a), hk(...p.b));
+    for (const w of st.wires) uf.union(w.from, w.to);
+    const idx = new Map(); let nNets = 0;
+    for (const k of uf.keys()) { const r = uf.find(k); if (!idx.has(r)) idx.set(r, nNets++); }
+    const net = key => idx.get(uf.find(key));
+    const gnd = net('T:alim1:-');
+
+    const resistors = st.parts.filter(p => p.kind === 'R').map(p => ({ a: net(hk(...p.a)), b: net(hk(...p.b)), g: 1 / p.trueValue }));
+    // ampoule : résistance qui croît avec la tension (filament), environ 10 fois plus faible à froid
+    const lamps = st.parts.filter(p => p.kind === 'L' && !p.burned).map(p => ({ id: p.id, a: net(hk(...p.a)), b: net(hk(...p.b)), Rhot: p.trueValue, Vnom: p.nominal, R: p.trueValue }));
+    const lampR = (V, l) => Math.max(l.Rhot / 10, l.Rhot * Math.pow(Math.abs(V) / l.Vnom, 0.45));
+    const caps = st.parts.filter(p => p.kind === 'C').map(p => ({ a: net(hk(...p.a)), b: net(hk(...p.b)), C: p.trueValue }));
+
+    // Détection des boucles de sources de tension (sources en conflit / court-circuit)
+    const res = { alims: {}, meters: {}, error: null, net, nNets };
+    const loopUF = makeUF();
+    const forced = {};
+    for (const a of ALIMS) {
+      const s = st.alims[a]; if (!s.on) continue;
+      const p = net(`T:${a}:+`), n = net(`T:${a}:-`);
+      if (p === n) { forced[a] = 'court-circuit'; continue; }
+      if (loopUF.find(p) === loopUF.find(n)) { forced[a] = 'conflit'; continue; }
+      loopUF.union(p, n);
+    }
+    const modes = {};
+    for (const a of ALIMS) modes[a] = forced[a] ? 'CC' : 'CV';
+    const ranges = {};
+    for (const m of METERS) ranges[m] = Math.min(st.meters[m].range || 0, RANGES[st.meters[m].mode].length - 1);
+
+    const vout = a => st.alims[a].vset + (st.alims[a].offset || 0);
+
+    function build() {
+      const els = { G: resistors.concat(lamps.map(l => ({ a: l.a, b: l.b, g: 1 / l.R }))), I: [], V: [] };
+      const vIndex = {};
+      for (const m of METERS) {
+        const s = st.meters[m]; if (!s.on) continue;
+        const A = net(`T:${m}:A`), B = net(`T:${m}:B`), C = net(`T:${m}:C`);
+        const rg = RANGES[s.mode][ranges[m]];
+        if (s.mode === 'DCV' || s.mode === 'ACV') els.G.push({ a: A, b: B, g: 1 / R_VOLTMETER });
+        else if (s.mode === 'DCI' || s.mode === 'ACI') els.G.push({ a: C, b: B, g: 1 / rg.shunt });
+        else if (s.mode === 'OHM') els.I.push({ into: A, from: B, I: rg.it });
+      }
+      for (const a of ALIMS) {
+        const s = st.alims[a]; if (!s.on) continue;
+        const p = net(`T:${a}:+`), n = net(`T:${a}:-`);
+        if (modes[a] === 'CV') { vIndex[a] = els.V.length; els.V.push({ p, n, V: vout(a) }); }
+        else els.I.push({ into: p, from: n, I: s.ilim });
+      }
+      return { els, vIndex };
+    }
+
+    let sol = null, vIndex = {};
+    for (let iter = 0; iter < 400; iter++) {
+      const b = build(); vIndex = b.vIndex;
+      sol = mna(nNets, gnd, b.els);
+      if (!sol) { res.error = 'Circuit insoluble (sources de tension en conflit).'; break; }
+      let changed = false;
+      for (const a of ALIMS) {
+        const s = st.alims[a]; if (!s.on || forced[a]) continue;
+        const p = net(`T:${a}:+`), n = net(`T:${a}:-`);
+        const V = sol.v(p) - sol.v(n);
+        if (modes[a] === 'CV') {
+          const Iout = -sol.srcI(vIndex[a]);
+          if (Iout > s.ilim + 1e-6) { modes[a] = 'CC'; changed = true; }
+        } else if (V > vout(a) + 1e-9) { modes[a] = 'CV'; changed = true; }
+      }
+      for (const l of lamps) {
+        const V = sol.v(l.a) - sol.v(l.b), Rn = 0.5 * l.R + 0.5 * lampR(V, l);
+        if (Math.abs(Rn - l.R) > 1e-7 * l.R) { l.R = Rn; changed = true; }
+      }
+      if (!changed) {
+        for (const m of METERS) {
+          const s = st.meters[m]; if (!s.on || !s.auto || s.mode === 'CAP') continue;
+          const raw = rawReading(m, s);
+          const r = pickRange(RANGES[s.mode], raw);
+          if (r !== ranges[m]) { ranges[m] = r; if (s.mode === 'DCI' || s.mode === 'ACI' || s.mode === 'OHM') changed = true; }
+        }
+      }
+      if (!changed) break;
+    }
+
+    function rawReading(m, s) {
+      const A = net(`T:${m}:A`), B = net(`T:${m}:B`), C = net(`T:${m}:C`);
+      const rg = RANGES[s.mode][ranges[m]];
+      switch (s.mode) {
+        case 'DCV': return sol.v(A) - sol.v(B);
+        case 'DCI': return (sol.v(C) - sol.v(B)) / rg.shunt;
+        case 'OHM': return (sol.v(A) - sol.v(B)) / rg.it;
+        default: return 0; // ACV / ACI en régime continu
+      }
+    }
+
+    res.lamps = {};
+    for (const l of lamps) {
+      if (!sol) { res.lamps[l.id] = { V: 0, I: 0, ratio: 0, burn: false }; continue; }
+      const V = sol.v(l.a) - sol.v(l.b), I = V / l.R, P = V * I, Pnom = l.Vnom * l.Vnom / l.Rhot;
+      res.lamps[l.id] = { V, I, P, ratio: P / Pnom, burn: Math.abs(V) > 1.6 * l.Vnom };
+    }
+    for (const a of ALIMS) {
+      const s = st.alims[a];
+      if (!s.on || !sol) { res.alims[a] = { on: s.on, mode: '-', V: 0, I: 0, forced: forced[a] || null }; continue; }
+      const p = net(`T:${a}:+`), n = net(`T:${a}:-`);
+      const V = sol.v(p) - sol.v(n);
+      const I = modes[a] === 'CV' ? -sol.srcI(vIndex[a]) : s.ilim;
+      res.alims[a] = { on: true, mode: modes[a], V, I, forced: forced[a] || null };
+    }
+    for (const m of METERS) {
+      const s = st.meters[m];
+      if (!s.on || !sol) { res.meters[m] = { on: s.on, value: null }; continue; }
+      if (s.mode === 'CAP') { res.meters[m] = capMeasure(m, s); continue; }
+      const raw = rawReading(m, s);
+      const list = RANGES[s.mode];
+      const rg = list[ranges[m]];
+      const ol = (s.auto && ranges[m] < list.length - 1) ? false : Math.abs(raw) >= rg.fs * 1.1;
+      res.meters[m] = { on: true, value: raw, range: ranges[m], ol };
+    }
+
+    function capMeasure(m, s) {
+      const A = net(`T:${m}:A`), B = net(`T:${m}:B`);
+      const list = C_RANGES;
+      if (A === B) return { on: true, value: Infinity, range: list.length - 1, ol: true };
+      // chemin résistif entre les sondes ?
+      const dc = mna(nNets, gnd, { G: resistors.slice(), I: [{ into: A, from: B, I: 1 }], V: [] });
+      if (dc && (dc.v(A) - dc.v(B)) < 1e7) return { on: true, value: Infinity, range: s.auto ? list.length - 1 : s.range, ol: true };
+      const ac = mna(nNets, gnd, { G: caps.map(c => ({ a: c.a, b: c.b, g: c.C })), I: [{ into: A, from: B, I: 1 }], V: [] }, 1e-15);
+      let C = 0;
+      if (ac) { const dv = ac.v(A) - ac.v(B); C = dv > 0 ? 1 / dv : 0; if (C < 1e-12) C = 0; }
+      const r = s.auto ? pickRange(list, C) : Math.min(s.range, list.length - 1);
+      return { on: true, value: C, range: r, ol: C >= list[r].fs * (s.auto ? 1 : 1.1) };
+    }
+
+    return res;
+  }
+
+  return { solve, holeType, isConductive, nodeOf, nodeLetter, hk, RANGES, uncertainty, ROWS, COLS, R_VOLTMETER };
+})();
+if (typeof module !== 'undefined') module.exports = Engine;
+
+// ===================== Circuits des laboratoires =====================
+const Presets = (() => {
+  let uid = 1;
+  const nextId = () => 'p' + (uid++) + '_' + Math.random().toString(36).slice(2, 6);
+  const TOL = { R: 0.05, C: 0.10, S: 0, L: 0.05, K: 0 };
+
+  function randn() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+  function drawTrue(kind, nominal) {
+    const tol = TOL[kind] || 0; if (!tol) return nominal;
+    const d = Math.max(-tol * 0.95, Math.min(tol * 0.95, randn() * tol / 2.5));
+    return nominal * (1 + d);
+  }
+  // L (ampoule) : nominal = tension nominale, extra.inom = courant nominal ; trueValue = résistance à chaud
+  function baseValue(p) { return p.kind === 'L' ? p.nominal / p.inom : p.nominal; }
+  function redraw(p) { p.trueValue = drawTrue(p.kind === 'L' ? 'R' : p.kind, baseValue(p)); }
+  function part(kind, a, b, nominal = 0, exact = false, extra = {}) {
+    const p = { id: nextId(), kind, a, b, nominal, tol: TOL[kind] || 0, ...extra };
+    if (kind === 'K' && p.closed == null) p.closed = false;
+    if (exact) p.trueValue = baseValue(p); else redraw(p);
+    return p;
+  }
+  function wire(from, to, color) { return { id: nextId(), from, to, color }; }
+  const H = (r, c) => `H:${r}:${c}`;
+
+  function baseAlim(on = false, vset = 0, ilim = 0) { return { on, vset, ilim, offset: 0, lock: false, ocp: false, vdigit: 1, idigit: 2 }; }
+  function baseMeter(on = true) { return { on, mode: 'DCV', auto: true, range: 2, shift: false }; }
+
+  // Chaque préréglage : fonction (exact) -> {parts, wires, alims}
+  const LIST = {
+    l1c1: {
+      label: 'Labo 1 – Circuit 1 (série)',
+      note: 'ε = 12 V, R₁ = 470 Ω entre b et c, R₂ = 1,00 kΩ entre d et e. Le connecteur entre a (nœud 1) et b (nœud 2) est la « brèche » où insérer l’ampèremètre.',
+      build: ex => ({
+        parts: [
+          part('S', [1, 2], [1, 3]),
+          part('R', [1, 4], [1, 6], 470, ex),
+          part('S', [2, 7], [3, 7]),
+          part('R', [4, 4], [4, 6], 1000, ex),
+        ],
+        wires: [wire('T:alim1:+', H(1, 0), 'red'), wire('T:alim1:-', H(3, 4), 'black')],
+        alims: { alim1: baseAlim(true, 12, 0.010), alim2: baseAlim(false) },
+      }),
+    },
+    l1c2: {
+      label: 'Labo 1 – Circuit 2 (R₂ ∥ R₃)',
+      note: 'On ajoute R₃ = 3,00 kΩ entre d (nœud 7) et f (nœud 11), puis f est relié à e par deux connecteurs.',
+      build: ex => ({
+        parts: [
+          part('S', [1, 2], [1, 3]),
+          part('R', [1, 4], [1, 6], 470, ex),
+          part('S', [2, 7], [3, 7]),
+          part('R', [4, 4], [4, 6], 1000, ex),
+          part('R', [4, 7], [6, 7], 3000, ex),
+          part('S', [7, 5], [7, 6]),
+          part('S', [5, 4], [6, 4]),
+        ],
+        wires: [wire('T:alim1:+', H(1, 0), 'red'), wire('T:alim1:-', H(3, 4), 'black')],
+        alims: { alim1: baseAlim(true, 12, 0.010), alim2: baseAlim(false) },
+      }),
+    },
+    l2c1: {
+      label: 'Labo 2 – Circuit 1 (résistances équivalentes)',
+      note: 'Anneau a–R₁–b–R₂–c–d–R₄–e–R₃–f–a. a = nœud 1, b = nœud 2, c = nœud 3, d = nœud 7, e = nœud 6, f = nœud 5. Mesurez R_ab, R_be et R_ac à l’ohmmètre (aucune source).',
+      build: ex => ({
+        parts: [
+          part('R', [1, 1], [1, 3], 470, ex),
+          part('R', [1, 4], [1, 6], 1000, ex),
+          part('S', [2, 7], [3, 7]),
+          part('R', [4, 4], [4, 6], 10000, ex),
+          part('R', [4, 1], [4, 3], 3000, ex),
+          part('S', [2, 1], [3, 1]),
+        ],
+        wires: [],
+        alims: { alim1: baseAlim(false), alim2: baseAlim(false) },
+      }),
+    },
+    l2c2: {
+      label: 'Labo 2 – Circuit 2',
+      note: 'a = nœud 5 (borne −, potentiel de référence). Fil du haut : b = nœud 3 (borne +), c = nœud 2, d = nœud 7. e = nœud 6. R₁ entre a et e, R₃ entre c et e, R₂ entre e et d.',
+      build: ex => ({
+        parts: [
+          part('R', [1, 4], [3, 4], 3000, ex),
+          part('R', [4, 1], [4, 3], 470, ex),
+          part('R', [4, 4], [4, 6], 1000, ex),
+          part('S', [1, 5], [1, 6]),
+          part('S', [2, 7], [3, 7]),
+        ],
+        wires: [wire('T:alim1:+', H(0, 7), 'red'), wire('T:alim1:-', H(4, 0), 'black')],
+        alims: { alim1: baseAlim(true, 12, 0.010), alim2: baseAlim(false) },
+      }),
+    },
+    l2c3: {
+      label: 'Labo 2 – Circuit 3 (condensateur)',
+      note: 'Le connecteur du circuit 2 est remplacé par un condensateur : d = nœud 3 (borne +), f = nœud 7, c = nœud 2, e = nœud 6, a = nœud 5. Mesurez Vc − Ve, Vd − Vf et Vf − Ve.',
+      build: ex => ({
+        parts: [
+          part('R', [1, 4], [3, 4], 3000, ex),
+          part('R', [4, 1], [4, 3], 470, ex),
+          part('R', [4, 4], [4, 6], 1000, ex),
+          part('S', [1, 5], [1, 6]),
+          part('C', [1, 7], [3, 7], 100e-6, ex),
+        ],
+        wires: [wire('T:alim1:+', H(0, 7), 'red'), wire('T:alim1:-', H(4, 0), 'black')],
+        alims: { alim1: baseAlim(true, 12, 0.010), alim2: baseAlim(false) },
+      }),
+    },
+    l3c1: {
+      label: 'Labo 3 – Circuit 1 (Kirchhoff)',
+      note: 'b = nœud 1, c = nœud 2, d = nœud 3 ; a = nœud 9, f = nœud 10, e = nœud 11. ε₁ = 2 V (Alim 1, + sur c), ε₂ = 15 V (Alim 2, + sur c). Les cinq connecteurs sont les endroits où insérer l’ampèremètre.',
+      build: ex => ({
+        parts: [
+          part('R', [1, 1], [3, 1], 470, ex),
+          part('R', [1, 4], [3, 4], 1000, ex),
+          part('R', [1, 7], [3, 7], 3000, ex),
+          part('S', [5, 1], [6, 1]),
+          part('S', [5, 4], [6, 4]),
+          part('S', [5, 7], [6, 7]),
+          part('S', [7, 2], [7, 3]),
+          part('S', [7, 5], [7, 6]),
+        ],
+        wires: [
+          wire('T:alim1:+', H(0, 4), 'red'), wire('T:alim1:-', H(0, 1), 'black'),
+          wire('T:alim2:+', H(1, 5), 'red'), wire('T:alim2:-', H(0, 7), 'black'),
+        ],
+        alims: { alim1: baseAlim(true, 2, 0.010), alim2: baseAlim(true, 15, 0.010) },
+      }),
+    },
+    l3c2: {
+      label: 'Labo 3 – Circuit 2 (voltmètre sur 20 MΩ)',
+      note: 'R₅ = 20 MΩ entre les nœuds 1 et 2. Retirez le connecteur (nœuds 2–3) pour insérer l’ampèremètre (multimètre 1), puis branchez le multimètre 2 en voltmètre aux bornes de R₅.',
+      build: ex => ({
+        parts: [
+          part('R', [1, 1], [1, 3], 20e6, ex),
+          part('S', [1, 5], [1, 6]),
+        ],
+        wires: [wire('T:alim1:+', H(1, 0), 'red'), wire('T:alim1:-', H(1, 8), 'black')],
+        alims: { alim1: baseAlim(true, 12, 0.010), alim2: baseAlim(false) },
+      }),
+    },
+  };
+
+  return { LIST, part, wire, drawTrue, redraw, baseAlim, baseMeter, nextId, TOL, randn };
+})();
+if (typeof module !== 'undefined') module.exports = Presets;
+
+// ===================== Interface =====================
+(() => {
+  const E = Engine, PR = Presets;
+  const P = 42, BX = 362, BY = 56, GAP = 4;
+  const ALIM_POS = { alim1: [905, 8], alim2: [905, 290] }, ALIM_W = 315, ALIM_H = 270;
+  const MM_POS = { mm1: [8, 8], mm2: [8, 318] }, MM_W = 315, MM_H = 302;
+  const NS = 'http://www.w3.org/2000/svg';
+  const VSTEP = [10, 1, 0.1, 0.01], ISTEP = [1, 0.1, 0.01, 0.001];
+  const WIRE_COL = { red: ['#d42a2a', '#7d1010'], black: ['#1d1d1d', '#000'], yellow: ['#e8c31c', '#8a7106'], blue: ['#2a63d4', '#11336f'], green: ['#2a9d4a', '#11532a'] };
+  const COLOR_NAMES = ['Noir', 'Brun', 'Rouge', 'Orange', 'Jaune', 'Vert', 'Bleu', 'Violet', 'Gris', 'Blanc'];
+  const COLOR_HEX = ['#151515', '#7a4a1f', '#d32626', '#f07f10', '#f2cf1d', '#2b9c3c', '#1f5fd6', '#7b3fb5', '#8b8b8b', '#f4f4f4'];
+  const R_LAB = [470, 1000, 3000, 10000, 20e6];
+  const R_OTHER = [10, 100, 220, 330, 680, 1500, 2200, 3300, 4700, 6800, 22000, 47000, 100000, 220000, 470000, 1e6, 10e6];
+  const C_VALUES = [100e-6, 1e-6, 10e-6, 47e-6, 220e-6, 470e-6, 1000e-6, 100e-9];
+  const LAMPS = [{ v: 6, i: 0.1, label: '6 V · 0,1 A' }, { v: 12, i: 0.05, label: '12 V · 0,05 A' }, { v: 3.5, i: 0.2, label: '3,5 V · 0,2 A' }];
+  const lampLabel = p => (LAMPS.find(l => l.v === p.nominal && l.i === p.inom) || { label: comma(p.nominal) + ' V' }).label;
+  const STORE = 'platine-sim-v1';
+
+  // ---------- utilitaires ----------
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  const rnd = (x, d) => Math.round(x * 10 ** d) / 10 ** d;
+  const comma = s => String(s).replace('.', ',');
+  function fmtNum(n) { return Number.isInteger(n) && n < 10 ? comma(n.toFixed(1)) : comma(String(+n.toFixed(2))); }
+  function fmtR(v) { return v >= 1e6 ? fmtNum(v / 1e6) + ' MΩ' : v >= 1e3 ? fmtNum(v / 1e3) + ' kΩ' : comma(String(+v.toFixed(2))) + ' Ω'; }
+  function fmtC(v) { return v >= 1e-6 - 1e-12 ? comma(String(+(v * 1e6).toFixed(2))) + ' µF' : comma(String(+(v * 1e9).toFixed(1))) + ' nF'; }
+  function bands(R) {
+    let e = Math.floor(Math.log10(R) + 1e-9) - 1, d = Math.round(R / 10 ** e);
+    if (d >= 100) { d = Math.round(d / 10); e++; }
+    return [Math.floor(d / 10), d % 10, e];
+  }
+  const bandNames = R => bands(R).map(i => COLOR_NAMES[i]).join('-') + '-Or';
+  const nodeName = (r, c) => { const n = E.nodeOf(r, c); return `nœud ${n} (${E.nodeLetter(n)})`; };
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+  function holeXY(r, c) { const nc = Math.floor(c / 3), lc = c % 3; return [BX + nc * (3 * P + GAP) + (lc + 0.5) * P, BY + (r + 0.5) * P]; }
+  function termXY(inst, t) {
+    if (inst.startsWith('alim')) { const [x, y] = ALIM_POS[inst]; return { '+': [x + 36, y + 240], g: [x + 78, y + 240], '-': [x + 120, y + 240] }[t]; }
+    const [x, y] = MM_POS[inst]; return { A: [x + 284, y + 64], B: [x + 284, y + 146], C: [x + 284, y + 228] }[t];
+  }
+  function pos(key) { const s = key.split(':'); return s[0] === 'H' ? holeXY(+s[1], +s[2]) : termXY(s[1], s[2]); }
+  function endpointName(key) {
+    const s = key.split(':');
+    if (s[0] === 'H') return nodeName(+s[1], +s[2]);
+    const inst = s[1].startsWith('alim') ? 'Alim ' + s[1].slice(4) : 'Multimètre ' + s[1].slice(2);
+    const t = { '+': '+', '-': '−', g: 'terre', A: 'A', B: 'B', C: 'C' }[s[2]];
+    return `${inst} (${t})`;
+  }
+
+  // ---------- état ----------
+  function freshMeters() { return { mm1: PR.baseMeter(true), mm2: PR.baseMeter(false) }; }
+  function randomOffsets(st) { for (const a of ['alim1', 'alim2']) st.alims[a].offset = rnd((Math.random() * 2 - 1) * 0.004, 4); }
+  function stateFromPreset(key) {
+    const b = PR.LIST[key].build(false);
+    const st = { parts: b.parts, wires: b.wires, alims: b.alims, meters: freshMeters(), preset: key };
+    randomOffsets(st); return st;
+  }
+  function load() { try { const s = JSON.parse(localStorage.getItem(STORE)); if (s && s.parts && s.wires && s.alims && s.meters) return s; } catch (e) { } return null; }
+  function save() { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { } }
+
+  let S = load() || stateFromPreset('l1c1');
+  let R = null, disp = {};
+  const ui = { mode: 'idle', place: null, ghost: null, wireStart: null, wireDown: null, wireDragged: false, mouse: [0, 0], hoverKey: null, sel: null, drag: null, study: false, color: 'auto', flash: '', flashT: 0, knob: null, clearArm: 0 };
+
+  // ---------- placements possibles ----------
+  const CANDS = { 1: [], 2: [] };
+  for (let r = 0; r < E.ROWS; r++) for (let c = 0; c < E.COLS; c++) {
+    if (!E.isConductive(r, c)) continue;
+    for (const [dr, dc] of [[0, 1], [1, 0]]) for (const d of [1, 2]) {
+      const r2 = r + dr * d, c2 = c + dc * d;
+      if (!E.isConductive(r2, c2) || E.nodeOf(r, c) === E.nodeOf(r2, c2)) continue;
+      const fp = []; for (let i = 0; i <= d; i++) fp.push(`${r + dr * i},${c + dc * i}`);
+      const [x1, y1] = holeXY(r, c), [x2, y2] = holeXY(r2, c2);
+      CANDS[d].push({ a: [r, c], b: [r2, c2], fp, mid: [(x1 + x2) / 2, (y1 + y2) / 2] });
+    }
+  }
+  function footprint(p) {
+    const [r1, c1] = p.a, [r2, c2] = p.b, d = Math.abs(r1 - r2) + Math.abs(c1 - c2), out = [];
+    for (let i = 0; i <= d; i++) out.push(`${r1 + Math.sign(r2 - r1) * i},${c1 + Math.sign(c2 - c1) * i}`);
+    return out;
+  }
+  function bestPlacement(kind, pt, exceptId) {
+    const occ = new Set(); for (const p of S.parts) if (p.id !== exceptId) footprint(p).forEach(h => occ.add(h));
+    let best = null, bd = P * 0.85;
+    for (const c of CANDS[kind === 'S' ? 1 : 2]) {
+      if (c.fp.some(h => occ.has(h))) continue;
+      const d = Math.hypot(c.mid[0] - pt[0], c.mid[1] - pt[1]);
+      if (d < bd) { bd = d; best = c; }
+    }
+    return best;
+  }
+
+  // ---------- calcul ----------
+  function update() {
+    for (let k = 0; k < 5; k++) {
+      R = E.solve(S);
+      const fried = S.parts.filter(p => p.kind === 'L' && !p.burned && R.lamps[p.id] && R.lamps[p.id].burn);
+      if (!fried.length) break;
+      fried.forEach(p => { p.burned = true; });
+      ui.flash = `Une ampoule a grillé : la tension à ses bornes dépassait nettement sa tension nominale. Sélectionnez-la pour la remplacer.`; ui.flashT = Date.now();
+    }
+    for (const m of ['mm1', 'mm2']) if (S.meters[m].auto && R.meters[m] && R.meters[m].range != null) S.meters[m].range = R.meters[m].range;
+    refreshDisplays(); render(); save();
+  }
+  function refreshDisplays() {
+    disp = {};
+    for (const m of ['mm1', 'mm2']) {
+      const s = S.meters[m], r = R.meters[m];
+      if (!s.on || !r || r.value == null) { disp[m] = null; continue; }
+      const rg = E.RANGES[s.mode][r.range];
+      if (r.ol) { disp[m] = { text: 'OL', unit: rg.unit, rg, dv: null }; continue; }
+      const res = 10 ** -rg.dec / rg.k;
+      const x = r.value + PR.randn() * 0.45 * res;
+      let dv = rnd(x * rg.k, rg.dec); if (Object.is(dv, -0)) dv = 0;
+      disp[m] = { text: (dv < 0 ? '-' : '') + Math.abs(dv).toFixed(rg.dec), unit: rg.unit, rg, dv };
+    }
+  }
+
+  // ---------- rendu SVG ----------
+  function boardSVG() {
+    let s = '';
+    const W = 4 * 3 * P + 3 * GAP;
+    s += `<rect x="${BX - 12}" y="${BY - 34}" width="${W + 24}" height="${12 * P + 46}" rx="10" fill="#b8bcc2"/>`;
+    s += `<text x="${BX}" y="${BY - 14}" font-size="12" font-weight="600" fill="#3c4048">PLATINE · 16 nœuds × 5 douilles</text>`;
+    for (let nc = 0; nc < 4; nc++) s += `<rect x="${BX + nc * (3 * P + GAP)}" y="${BY}" width="${3 * P}" height="${12 * P}" rx="5" fill="#eceef1" stroke="#c6c9ce"/>`;
+    for (let nr = 0; nr < 4; nr++) for (let nc = 0; nc < 4; nc++) {
+      const [cx, cy] = holeXY(nr * 3 + 1, nc * 3 + 1), n = nr * 4 + nc + 1;
+      s += `<path d="M${cx - P},${cy}H${cx + P}M${cx},${cy - P}V${cy + P}" stroke="#2a2a2a" stroke-width="2.4"/>`;
+      s += `<text x="${cx - 20}" y="${cy - 17}" font-size="15" font-weight="600" fill="#2a2a2a" text-anchor="middle">${n}</text>`;
+      s += `<text transform="translate(${cx + 15},${cy + 25}) rotate(-90)" font-size="13" fill="#2a2a2a" text-anchor="middle">${E.nodeLetter(n)}</text>`;
+    }
+    for (let r = 0; r < E.ROWS; r++) for (let c = 0; c < E.COLS; c++) {
+      const [x, y] = holeXY(r, c);
+      if (!E.isConductive(r, c)) { s += `<circle cx="${x}" cy="${y}" r="11" fill="#c4c8ce" stroke="#b2b6bc"/>`; continue; }
+      s += `<g data-k="hole:${r}:${c}" class="hole"><circle cx="${x}" cy="${y}" r="14" fill="#1b1b1b"/><circle cx="${x}" cy="${y}" r="10.5" fill="#f3f3f3"/><circle cx="${x}" cy="${y}" r="6" fill="#2a2622"/><circle cx="${x}" cy="${y}" r="2.6" fill="#b8924a"/></g>`;
+    }
+    return s;
+  }
+
+  function partSVG(p, a, b, opt = {}) {
+    const [x1, y1] = holeXY(...a), [x2, y2] = holeXY(...b);
+    const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2, ang = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI, L = Math.hypot(x2 - x1, y2 - y1);
+    const cls = opt.ghost ? 'ghost' : 'part';
+    let s = `<g class="${cls}" ${opt.ghost ? '' : `data-k="part:${p.id}"`} transform="translate(${cx},${cy}) rotate(${ang})">`;
+    if (opt.sel) s += `<rect x="${-L / 2 - 22}" y="-21" width="${L + 44}" height="42" rx="8" fill="none" stroke="#ffb020" stroke-width="3"/>`;
+    if (p.kind === 'S') {
+      s += `<rect x="${-L / 2 - 16}" y="-12" width="${L + 32}" height="24" rx="12" fill="#161616" stroke="#000"/>`;
+      s += `<rect x="-7" y="-15" width="14" height="30" rx="3" fill="#262626"/>`;
+      s += `<circle cx="${-L / 2}" cy="0" r="8" fill="#2c2c2c" stroke="#555"/><circle cx="${L / 2}" cy="0" r="8" fill="#2c2c2c" stroke="#555"/>`;
+    } else {
+      s += `<rect x="${-L / 2 - 18}" y="-18" width="${L + 36}" height="36" rx="4" fill="#2f7c48" stroke="#1d5a33"/>`;
+      s += `<line x1="${-L / 2}" y1="0" x2="${L / 2}" y2="0" stroke="#c9c9c9" stroke-width="2"/>`;
+      if (p.kind === 'R') {
+        const [d1, d2, mul] = bands(p.nominal);
+        s += `<rect x="-17" y="-6.5" width="34" height="13" rx="5.5" fill="${p.nominal >= 1e6 ? '#7aa9da' : '#d9c08e'}" stroke="#8a7a5a" stroke-width=".6"/>`;
+        [[-11, d1], [-6, d2], [-1, mul]].forEach(([x, i]) => s += `<rect x="${x}" y="-6.5" width="3" height="13" fill="${COLOR_HEX[i]}"/>`);
+        s += `<rect x="9" y="-6.5" width="3" height="13" fill="#c9a227"/>`;
+        s += `<text x="0" y="15.5" font-size="8.5" fill="#e9f5ec" text-anchor="middle">${esc(fmtR(p.nominal))}</text>`;
+      } else if (p.kind === 'L') {
+        const lr = !opt.ghost && R && R.lamps && R.lamps[p.id], ratio = lr ? clamp(lr.ratio, 0, 2) : 0, b = Math.pow(clamp(ratio, 0, 1), 0.6);
+        s += `<rect x="-17" y="-6" width="34" height="12" fill="#2f7c48"/>`;
+        if (b > 0.02 && !p.burned) s += `<circle cx="0" cy="0" r="${12 + 16 * b}" fill="#ffd25a" opacity="${0.45 * b}"/>`;
+        const glass = p.burned ? '#b9b9b0' : b > 0.02 ? `rgb(255,${Math.round(236 - 40 * b)},${Math.round(200 - 150 * b)})` : '#efeee6';
+        s += `<circle cx="0" cy="0" r="12" fill="${glass}" stroke="#8a8a80" stroke-width="1.2"/>`;
+        s += p.burned ? `<path d="M-6,3 L-3,-3 L0,1 M2,-1 L5,3" stroke="#444" stroke-width="1.4" fill="none"/><circle cx="1" cy="-2" r="3" fill="#555" opacity=".5"/>`
+          : `<path d="M-6,3 L-4,-3 L-1,3 L2,-3 L5,3" stroke="${b > 0.02 ? '#ff9a00' : '#777'}" stroke-width="1.4" fill="none"/>`;
+        s += `<text x="0" y="${opt.ghost ? 17 : 17}" font-size="8.5" fill="#e9f5ec" text-anchor="middle" transform="translate(0,0)">${esc(p.burned ? 'grillée' : (p.inom ? lampLabel(p) : ''))}</text>`;
+      } else if (p.kind === 'K') {
+        const closed = !!p.closed;
+        s += `<rect x="-17" y="-6" width="34" height="12" fill="#2f7c48"/>`;
+        s += `<g ${opt.ghost ? '' : `data-k="toggle:${p.id}"`} class="toggle"><rect x="-18" y="-17" width="36" height="30" fill="transparent"/>`;
+        s += `<circle cx="-12" cy="0" r="3.5" fill="#d9d9d9" stroke="#555"/><circle cx="12" cy="0" r="3.5" fill="#d9d9d9" stroke="#555"/>`;
+        s += closed ? `<line x1="-12" y1="0" x2="12" y2="0" stroke="#111" stroke-width="4" stroke-linecap="round"/>` : `<line x1="-12" y1="0" x2="9" y2="-12" stroke="#111" stroke-width="4" stroke-linecap="round"/>`;
+        s += `<circle cx="-12" cy="0" r="2" fill="#111"/></g>`;
+        s += `<text x="0" y="15.5" font-size="8.5" fill="#e9f5ec" text-anchor="middle">${closed ? 'fermé' : 'ouvert'}</text>`;
+      } else {
+        s += `<rect x="-14" y="-10" width="28" height="20" rx="4" fill="#23419a" stroke="#122a6b"/><rect x="8" y="-10" width="4.5" height="20" fill="#c9d4f2"/>`;
+        s += `<text x="0" y="16" font-size="8.5" fill="#e9f5ec" text-anchor="middle">${esc(fmtC(p.nominal))}</text>`;
+      }
+      // vis : elles acceptent aussi une fiche banane (data-k = trou)
+      s += `</g>`;
+      for (const [h, [x, y]] of [[a, [x1, y1]], [b, [x2, y2]]]) {
+        s += `<g ${opt.ghost ? 'class="ghost"' : `data-k="hole:${h[0]}:${h[1]}" class="hole"`}><circle cx="${x}" cy="${y}" r="10" fill="#d8dbde" stroke="#80858b" stroke-width="1.5"/><circle cx="${x}" cy="${y}" r="4.5" fill="#9ea3a8"/></g>`;
+      }
+      return s;
+    }
+    return s + '</g>';
+  }
+
+  function wirePath(a, b) {
+    const [x1, y1] = a, [x2, y2] = b, d = Math.hypot(x2 - x1, y2 - y1), sag = 26 + d * 0.16;
+    return `M${x1},${y1} C${x1},${y1 + sag} ${x2},${y2 + sag} ${x2},${y2}`;
+  }
+  function wireSVG(w) {
+    const a = pos(w.from), b = pos(w.to), d = wirePath(a, b), [c1, c2] = WIRE_COL[w.color] || WIRE_COL.black;
+    const sel = ui.sel && ui.sel.type === 'wire' && ui.sel.id === w.id;
+    return `<g data-k="wire:${w.id}" class="wire">${sel ? `<path d="${d}" stroke="#ffb020" stroke-width="11" fill="none" stroke-linecap="round"/>` : ''}<path d="${d}" stroke="${c2}" stroke-width="7" fill="none" stroke-linecap="round"/><path d="${d}" stroke="${c1}" stroke-width="4.5" fill="none" stroke-linecap="round"/><path d="${d}" stroke="transparent" stroke-width="16" fill="none"/>` +
+      [a, b].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="7" fill="${c1}" stroke="${c2}" stroke-width="2"/>`).join('') + '</g>';
+  }
+
+  function terminal(key, color, label, lx, ly) {
+    const [x, y] = pos(key), ring = { red: '#c62828', black: '#1c1c1c', green: '#2e8b3e' }[color];
+    return `<text x="${lx}" y="${ly}" font-size="11" fill="currentColor" text-anchor="middle">${label}</text>` +
+      `<g data-k="term:${key.slice(2)}" class="hole"><circle cx="${x}" cy="${y}" r="14" fill="${ring}" stroke="#000" stroke-width="1"/><circle cx="${x}" cy="${y}" r="7" fill="#1a1a1a"/><circle cx="${x}" cy="${y}" r="3" fill="#b8924a"/></g>`;
+  }
+  function btn(k, x, y, w, h, label, opt = {}) {
+    return `<g data-k="btn:${k}" class="btn"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="${opt.fill || '#f3f2ee'}" stroke="${opt.stroke || '#8d8a82'}"/><text x="${x + w / 2}" y="${y + h / 2 + 4.5}" font-size="${opt.fs || 12}" text-anchor="middle" fill="${opt.color || '#222'}" font-weight="600">${label}</text></g>`;
+  }
+
+  function digits(str, xRight, y, cw, fill, fs) {
+    let s = ''; const n = str.length;
+    for (let i = 0; i < n; i++) s += `<text x="${xRight - (n - i - 0.5) * cw}" y="${y}" font-size="${fs}" fill="${fill}" text-anchor="middle" class="lcd">${esc(str[i])}</text>`;
+    return s;
+  }
+
+  function alimSVG(id) {
+    const [x, y] = ALIM_POS[id], a = S.alims[id], r = R.alims[id] || {}, on = a.on, n = id.slice(4);
+    let s = `<g style="color:#cfd3d8"><rect x="${x}" y="${y}" width="${ALIM_W}" height="${ALIM_H}" rx="12" fill="#30343b" stroke="#181b20"/>`;
+    s += `<text x="${x + 16}" y="${y + 21}" font-size="12" font-weight="700" fill="#e7eaee">ALIM ${n}</text><text x="${x + ALIM_W - 16}" y="${y + 21}" font-size="10.5" fill="#9aa1aa" text-anchor="end">0–30 V · 0–3 A</text>`;
+    // afficheurs
+    const cw = 20, fs = 33;
+    s += `<rect x="${x + 14}" y="${y + 30}" width="${138}" height="${58}" rx="4" fill="#160707" stroke="#000"/>`;
+    s += `<rect x="${x + 163}" y="${y + 30}" width="${138}" height="${58}" rx="4" fill="#051309" stroke="#000"/>`;
+    const vRight = x + 128, iRight = x + 277;
+    if (on) {
+      const vs = Math.max(0, r.V || 0).toFixed(2).padStart(5, ' ');
+      const iv = a.ocp ? a.ilim : Math.max(0, r.I || 0);
+      const is = iv.toFixed(3).padStart(5, ' ');
+      s += digits(vs, vRight, y + 72, cw, '#ff4a36', fs) + `<text x="${x + 134}" y="${y + 80}" font-size="13" fill="#ff7a6a">V</text>`;
+      s += digits(is, iRight, y + 72, cw, a.ocp ? '#ffd166' : '#43ff79', fs) + `<text x="${x + 283}" y="${y + 80}" font-size="13" fill="#7dffa2">A</text>`;
+      const vIdx = [0, 1, 3, 4][a.vdigit], iIdx = [0, 2, 3, 4][a.idigit];
+      const tri = (cx, yy, col) => `<path d="M${cx - 4},${yy + 6} L${cx + 4},${yy + 6} L${cx},${yy} Z" fill="${col}"/>`;
+      s += tri(vRight - (5 - vIdx - 0.5) * cw, y + 91, '#ff7a6a') + tri(iRight - (5 - iIdx - 0.5) * cw, y + 91, a.ocp ? '#ffd166' : '#7dffa2');
+    }
+    const led = (cx, label, act, col) => `<circle cx="${cx}" cy="${y + 112}" r="5" fill="${act ? col : '#4a4f57'}" stroke="#111"/><text x="${cx + 9}" y="${y + 116}" font-size="10.5" fill="#cfd3d8">${label}</text>`;
+    s += led(x + 26, 'CV', on && r.mode === 'CV', '#ff3b30') + led(x + 82, 'LOCK', on && a.lock, '#ff3b30') + led(x + 175, 'CC', on && r.mode === 'CC', '#ff3b30') + led(x + 231, 'OCP', on && a.ocp, '#ff3b30');
+    // boutons rotatifs
+    const knob = (which, kx, ky, frac, label) => {
+      const ang = (-135 + 270 * clamp(frac, 0, 1)) * Math.PI / 180;
+      let k = `<g data-k="knob:${id}:${which}" class="knob"><circle cx="${kx}" cy="${ky}" r="25" fill="#1a1a1a" stroke="#5c6168" stroke-width="2"/><circle cx="${kx}" cy="${ky}" r="18" fill="#2a2a2a"/><line x1="${kx}" y1="${ky}" x2="${kx + 20 * Math.sin(ang)}" y2="${ky - 20 * Math.cos(ang)}" stroke="#e7eaee" stroke-width="3" stroke-linecap="round"/></g>`;
+      if (ui.knob && ui.knob.id === id && ui.knob.which === which && !ui.knob.done) {
+        const f = clamp((Date.now() - ui.knob.t0) / 3000, 0, 1);
+        if (f > 0.2) { const A = f * 2 * Math.PI, ex = kx + 30 * Math.sin(A), ey = ky - 30 * Math.cos(A); k += `<path d="M${kx},${ky - 30} A30,30 0 ${A > Math.PI ? 1 : 0},1 ${ex},${ey}" stroke="#ffd166" stroke-width="4" fill="none"/>`; }
+      }
+      k += btn(`${id}:${which}-`, kx - 58, ky - 11, 24, 22, '↺', { fs: 13 }) + btn(`${id}:${which}+`, kx + 34, ky - 11, 24, 22, '↻', { fs: 13 });
+      k += `<text x="${kx}" y="${ky + 40}" font-size="10" fill="#cfd3d8" text-anchor="middle">${label}</text>`;
+      return k;
+    };
+    s += knob('V', x + 84, y + 158, a.vset / 30, 'VOLTAGE (6)') + knob('I', x + 233, y + 158, a.ilim / 3, 'CURRENT (5)');
+    s += btn(`${id}:pow`, x + 251, y + 222, 50, 30, '⏻', { fill: on ? '#2a9d4a' : '#5a5f66', stroke: '#111', color: '#fff', fs: 16 });
+    s += terminal(`T:${id}:+`, 'red', '+', x + 36, y + 220) + terminal(`T:${id}:g`, 'green', '⏚', x + 78, y + 220) + terminal(`T:${id}:-`, 'black', '−', x + 120, y + 220);
+    return s + '</g>';
+  }
+
+  const MODE_LABEL = { DCV: 'DCV', ACV: 'ACV', DCI: 'DCI', ACI: 'ACI', OHM: 'Ω 2W', CAP: 'CAP' };
+  function meterSVG(id) {
+    const [x, y] = MM_POS[id], m = S.meters[id], d = disp[id], n = id.slice(2);
+    let s = `<g style="color:#333"><rect x="${x}" y="${y}" width="${MM_W}" height="${MM_H}" rx="12" fill="#dad8d1" stroke="#a6a39a"/>`;
+    s += `<text x="${x + 16}" y="${y + 20}" font-size="12" font-weight="700" fill="#33363b">MULTIMÈTRE ${n}</text><text x="${x + 252}" y="${y + 20}" font-size="10.5" fill="#6b6e73" text-anchor="end">5½ chiffres</text>`;
+    s += `<rect x="${x + 14}" y="${y + 28}" width="238" height="106" rx="5" fill="${m.on ? '#0f1c27' : '#22272c'}" stroke="#4d5359"/>`;
+    if (m.on) {
+      s += `<text x="${x + 24}" y="${y + 47}" font-size="12.5" font-weight="700" fill="#7fd1ff">${MODE_LABEL[m.mode]}</text>`;
+      s += `<text x="${x + 242}" y="${y + 47}" font-size="11.5" font-weight="700" fill="#ffd166" text-anchor="end">${m.auto ? 'AUTO' : 'MAN'}</text>`;
+      if (m.shift) s += `<text x="${x + 133}" y="${y + 47}" font-size="11" font-weight="700" fill="#ff9f43" text-anchor="middle">SHIFT</text>`;
+      if (d) {
+        s += `<text x="${x + 206}" y="${y + 90}" font-size="31" fill="#f4f7f8" text-anchor="end" class="lcd">${esc(d.text)}</text><text x="${x + 211}" y="${y + 90}" font-size="15" fill="#f4f7f8">${esc(d.unit)}</text>`;
+        s += `<text x="${x + 24}" y="${y + 126}" font-size="11" fill="#9fb3c8">Échelle : ${esc(d.rg.label)}</text>`;
+        if (ui.study && d.dv != null) {
+          const u = E.uncertainty(d.rg, d.dv);
+          s += `<text x="${x + 242}" y="${y + 126}" font-size="11" fill="#ffd166" text-anchor="end">${u == null ? 'spéc. non fournie' : '± ' + comma(u.toPrecision(2)) + ' ' + esc(d.unit)}</text>`;
+        }
+      }
+    }
+    const act = mode => m.on && m.mode === mode ? { fill: '#ffe39a', stroke: '#b38a10' } : {};
+    const bx = i => x + 14 + i * 60;
+    s += `<text x="${bx(0) + 27}" y="${y + 150}" font-size="9.5" fill="#1f5fd6" text-anchor="middle" font-weight="700">DCI</text><text x="${bx(1) + 27}" y="${y + 150}" font-size="9.5" fill="#1f5fd6" text-anchor="middle" font-weight="700">ACI</text>`;
+    s += btn(`${id}:DCV`, bx(0), y + 154, 54, 26, 'DCV', m.on && (m.mode === 'DCV' || m.mode === 'DCI') ? act(m.mode) : {});
+    s += btn(`${id}:ACV`, bx(1), y + 154, 54, 26, 'ACV', m.on && (m.mode === 'ACV' || m.mode === 'ACI') ? act(m.mode) : {});
+    s += btn(`${id}:OHM`, bx(2), y + 154, 54, 26, 'Ω2W', act('OHM'));
+    s += btn(`${id}:CAP`, bx(3), y + 154, 54, 26, 'CAP', act('CAP'));
+    s += btn(`${id}:SHIFT`, bx(0), y + 188, 54, 26, 'SHIFT', { color: '#1f5fd6', ...(m.shift ? { fill: '#d6e4ff' } : {}) });
+    s += btn(`${id}:AUTO`, bx(1), y + 188, 54, 26, 'AUTO', { fs: 11 });
+    s += btn(`${id}:UP`, bx(2), y + 188, 54, 26, '▲') + btn(`${id}:DN`, bx(3), y + 188, 54, 26, '▼');
+    s += btn(`${id}:pow`, bx(0), y + 226, 54, 30, '⏻', { fill: m.on ? '#2a9d4a' : '#6a6e74', stroke: '#222', color: '#fff', fs: 16 });
+    s += `<text x="${bx(1)}" y="${y + 240}" font-size="10" fill="#55585d">Bornes : A = V, Ω · B = LO (réf.)</text><text x="${bx(1)}" y="${y + 254}" font-size="10" fill="#55585d">C = courant · lecture = V(rouge) − V(noir)</text>`;
+    s += terminal(`T:${id}:A`, 'red', 'A · V Ω', x + 284, y + 42) + terminal(`T:${id}:B`, 'black', 'B · LO', x + 284, y + 124) + terminal(`T:${id}:C`, 'red', 'C · A', x + 284, y + 206);
+    return s + '</g>';
+  }
+
+  let rafPending = false;
+  const scheduleRender = () => { if (!rafPending) { rafPending = true; requestAnimationFrame(render); } };
+
+  function render() {
+    rafPending = false;
+    let s = alimSVG('alim1') + alimSVG('alim2') + meterSVG('mm1') + meterSVG('mm2');
+    for (const p of S.parts) {
+      if (ui.drag && ui.drag.moved && ui.drag.id === p.id && ui.ghost) continue;
+      const sel = ui.sel && ui.sel.type === 'part' && ui.sel.id === p.id;
+      s += partSVG(p, p.a, p.b, { sel });
+    }
+    for (const w of S.wires) s += wireSVG(w);
+    if (ui.mode === 'placing' && ui.ghost) s += partSVG({ kind: ui.place.kind, nominal: ui.place.nominal }, ui.ghost.a, ui.ghost.b, { ghost: true });
+    if (ui.drag && ui.drag.moved && ui.ghost) { const p = S.parts.find(q => q.id === ui.drag.id); if (p) s += partSVG(p, ui.ghost.a, ui.ghost.b, { ghost: true, sel: true }); }
+    if (ui.mode === 'wiring' && ui.wireStart) {
+      const a = pos(ui.wireStart), b = ui.hoverKey && ui.hoverKey !== ui.wireStart ? pos(ui.hoverKey) : ui.mouse;
+      s += `<path d="${wirePath(a, b)}" stroke="#ffb020" stroke-width="4" stroke-dasharray="7 5" fill="none" pointer-events="none"/><circle cx="${a[0]}" cy="${a[1]}" r="9" fill="none" stroke="#ffb020" stroke-width="3" pointer-events="none"/>`;
+    }
+    if (ui.hoverKey && ui.mode !== 'placing') { const [x, y] = pos(ui.hoverKey); s += `<circle cx="${x}" cy="${y}" r="16" fill="none" stroke="#ffb020" stroke-width="3" pointer-events="none"/>`; }
+    dyn.innerHTML = s;
+    renderInfo();
+  }
+
+  // ---------- panneau d'information ----------
+  function wiredTerms() { const set = new Set(); for (const w of S.wires) for (const k of [w.from, w.to]) if (k.startsWith('T:')) set.add(k); return set; }
+  function warnings() {
+    const out = [];
+    if (R.error) out.push(R.error);
+    for (const a of ['alim1', 'alim2']) {
+      const r = R.alims[a], n = a.slice(4);
+      if (r.forced === 'court-circuit') out.push(`Alim ${n} : court-circuit (+ relié directement à −). Elle débite sa limite de courant sous 0 V.`);
+      if (r.forced === 'conflit') out.push(`Alim ${n} : en parallèle avec une autre source de tension (conflit). Elle est forcée en mode CC.`);
+    }
+    if (!ui.study) return out;
+    const wt = wiredTerms();
+    for (const m of ['mm1', 'mm2']) {
+      const s = S.meters[m], n = m.slice(2); if (!s.on) continue;
+      const A = wt.has(`T:${m}:A`), C = wt.has(`T:${m}:C`);
+      if ((s.mode === 'DCI' || s.mode === 'ACI') && A && !C) out.push(`Multimètre ${n} : en mode courant, le fil rouge doit être dans la borne C, pas A. La lecture reste à 0.`);
+      if ((s.mode === 'DCV' || s.mode === 'OHM' || s.mode === 'ACV' || s.mode === 'CAP') && C && !A) out.push(`Multimètre ${n} : en mode ${MODE_LABEL[s.mode]}, le fil rouge doit être dans la borne A, pas C.`);
+      if (s.mode === 'OHM' && ['alim1', 'alim2'].some(a => S.alims[a].on && wt.has(`T:${a}:+`))) out.push(`Multimètre ${n} (ohmmètre) : une alimentation allumée est branchée. La lecture est faussée ; mesurez une résistance hors tension, hors circuit.`);
+    }
+    for (const a of ['alim1', 'alim2']) {
+      const r = R.alims[a]; if (r.on && r.mode === 'CC' && !r.forced) out.push(`Alim ${a.slice(4)} en mode CC : la limite de ${comma((S.alims[a].ilim * 1e3).toFixed(1))} mA est atteinte, la tension de sortie (${comma(r.V.toFixed(2))} V) est sous la consigne (${comma(S.alims[a].vset.toFixed(2))} V).`);
+    }
+    return out;
+  }
+  function studyLines() {
+    if (!ui.study) return '';
+    let h = '';
+    for (const m of ['mm1', 'mm2']) {
+      const d = disp[m]; if (!d || d.dv == null) continue;
+      const u = E.uncertainty(d.rg, d.dv), res = (10 ** -d.rg.dec).toFixed(d.rg.dec);
+      h += `<div class="study">Multimètre ${m.slice(2)} : L = ${comma(d.text)} ${d.unit} (échelle ${d.rg.label}) → `;
+      h += u == null ? 'spécification non fournie dans le cours pour cette échelle.' :
+        `δ = ${comma(d.rg.spec[0])} % × ${comma(Math.abs(d.dv).toFixed(d.rg.dec))} + ${d.rg.spec[1]} × ${comma(res)}${d.rg.add ? ' + ' + comma(d.rg.add) : ''} = <b>${comma(u.toPrecision(3))} ${d.unit}</b>`;
+      h += '</div>';
+    }
+    return h;
+  }
+  function renderInfo() {
+    let h = '';
+    const st = ui.mode === 'placing' ? 'Placement : visez le milieu de la plaquette et cliquez. Échap pour annuler.'
+      : ui.mode === 'wiring' ? 'Fil : cliquez sur une autre douille ou borne. Échap pour annuler.'
+        : 'Cliquez une douille ou une borne pour tirer un fil. Glissez un composant pour le déplacer.';
+    statusEl.textContent = (ui.flash && Date.now() - ui.flashT < 4000) ? ui.flash : st;
+    if (ui.sel && ui.sel.type === 'part') {
+      const p = S.parts.find(q => q.id === ui.sel.id);
+      if (p) {
+        const where = `entre le ${nodeName(...p.a)} et le ${nodeName(...p.b)}`;
+        if (p.kind === 'R') h += `<div><b>Résistance ${fmtR(p.nominal)}</b> ±5 % · ${bandNames(p.nominal)} · ${where}. <span class="muted">Sa vraie valeur est tirée dans la tolérance : mesurez-la.</span></div>`;
+        else if (p.kind === 'C') h += `<div><b>Condensateur ${fmtC(p.nominal)}</b> · ${where}. <span class="muted">Régime permanent : aucun courant ne le traverse.</span></div>`;
+        else if (p.kind === 'L') h += `<div><b>Ampoule ${lampLabel(p)}</b> ${p.burned ? '<b style="color:#b02a2a">(grillée)</b>' : ''} · ${where}. <span class="muted">Non ohmique : environ ${comma(Math.round(p.nominal / p.inom))} Ω à chaud, environ dix fois moins à froid (essayez l’ohmmètre).</span></div>`;
+        else if (p.kind === 'K') h += `<div><b>Interrupteur ${p.closed ? 'fermé' : 'ouvert'}</b> · ${where}. <span class="muted">Cliquez sur le levier pour le basculer.</span></div>`;
+        else h += `<div><b>Connecteur</b> · ${where}.</div>`;
+        h += `<div class="row">`;
+        if (p.kind === 'R') h += `<label>Valeur <select data-chg="R">${valueOptions('R', p.nominal)}</select></label>`;
+        if (p.kind === 'C') h += `<label>Valeur <select data-chg="C">${valueOptions('C', p.nominal)}</select></label>`;
+        if (p.kind === 'L') h += `<label>Type <select data-chg="L">${LAMPS.map((l, k) => `<option value="${k}" ${l.v === p.nominal && l.i === p.inom ? 'selected' : ''}>${l.label}</option>`).join('')}</select></label>` + (p.burned ? `<button data-act="replace">Remplacer l’ampoule</button>` : '');
+        if (p.kind === 'K') h += `<button data-act="toggle">${p.closed ? 'Ouvrir' : 'Fermer'}</button>`;
+        h += `<button data-act="del">Supprimer</button></div>`;
+      }
+    } else if (ui.sel && ui.sel.type === 'wire') {
+      const w = S.wires.find(q => q.id === ui.sel.id);
+      if (w) h += `<div><b>Fil</b> : ${endpointName(w.from)} → ${endpointName(w.to)}</div><div class="row"><button data-act="del">Supprimer</button></div>`;
+    } else if (S.preset && PR.LIST[S.preset]) {
+      h += `<div><b>${PR.LIST[S.preset].label}</b> — ${PR.LIST[S.preset].note}</div>`;
+    }
+    const nS = S.parts.filter(p => p.kind === 'S').length;
+    h += `<div class="muted">Connecteurs utilisés : ${nS} (le coffret en contient 5).</div>`;
+    h += studyLines();
+    const ws = warnings(); if (ws.length) h += ws.map(w => `<div class="warn">⚠ ${esc(w)}</div>`).join('');
+    if (h !== infoEl._last) { infoEl.innerHTML = h; infoEl._last = h; }
+  }
+  function valueOptions(kind, cur) {
+    if (kind === 'R') return `<optgroup label="Coffret du labo">${R_LAB.map(v => `<option value="${v}" ${v === cur ? 'selected' : ''}>${fmtR(v)}</option>`).join('')}</optgroup><optgroup label="Autres">${R_OTHER.map(v => `<option value="${v}" ${v === cur ? 'selected' : ''}>${fmtR(v)}</option>`).join('')}</optgroup>`;
+    return C_VALUES.map(v => `<option value="${v}" ${v === cur ? 'selected' : ''}>${fmtC(v)}</option>`).join('');
+  }
+  function flash(msg) { ui.flash = msg; ui.flashT = Date.now(); renderInfo(); setTimeout(renderInfo, 4100); }
+
+  // ---------- actions ----------
+  function commitPlace() {
+    const g = ui.ghost; if (!g) return;
+    const p = PR.part(ui.place.kind, g.a, g.b, ui.place.nominal, false, ui.place.kind === 'L' ? { inom: ui.place.inom } : {});
+    S.parts.push(p); ui.mode = 'idle'; ui.place = null; ui.ghost = null; ui.sel = { type: 'part', id: p.id };
+    update();
+  }
+  function autoColor(a, b) {
+    if (ui.color !== 'auto') return ui.color;
+    for (const k of [a, b]) { const t = k.split(':')[2]; if (k.startsWith('T:')) return t === '+' || t === 'A' || t === 'C' ? 'red' : t === 'g' ? 'green' : 'black'; }
+    return 'yellow';
+  }
+  function finishWire(ek) {
+    if (!ui.wireStart || ek === ui.wireStart) return;
+    S.wires.push(PR.wire(ui.wireStart, ek, autoColor(ui.wireStart, ek)));
+    ui.mode = 'idle'; ui.wireStart = null; ui.hoverKey = null; update();
+  }
+  function cancel() { ui.mode = 'idle'; ui.place = null; ui.ghost = null; ui.wireStart = null; ui.drag = null; render(); }
+  function deleteSel() {
+    if (!ui.sel) return;
+    if (ui.sel.type === 'part') S.parts = S.parts.filter(p => p.id !== ui.sel.id);
+    else S.wires = S.wires.filter(w => w.id !== ui.sel.id);
+    ui.sel = null; update();
+  }
+  function rotate(id, which, dir) {
+    const a = S.alims[id];
+    if (which === 'V') {
+      if (a.lock) return flash('Alimentation verrouillée (LOCK) : maintenez le bouton VOLTAGE 3 s pour la déverrouiller.');
+      a.vset = clamp(rnd(a.vset + dir * VSTEP[a.vdigit], 2), 0, 30);
+    } else {
+      if (!a.ocp) return flash('Pour régler la limite de courant, maintenez le bouton CURRENT 3 s (mode OCP), réglez, puis maintenez 3 s de nouveau.');
+      a.ilim = clamp(rnd(a.ilim + dir * ISTEP[a.idigit], 3), 0, 3);
+    }
+    update();
+  }
+  function setMode(m, mode) { m.mode = mode; m.auto = true; m.range = 0; m.shift = false; }
+  function handleBtn(inst, b) {
+    if (inst.startsWith('alim')) {
+      const a = S.alims[inst];
+      if (b === 'pow') { a.on = !a.on; return update(); }
+      if (!a.on) return flash('Allumez d’abord l’alimentation (⏻).');
+      return rotate(inst, b[0], b[1] === '+' ? 1 : -1);
+    }
+    const m = S.meters[inst];
+    if (b === 'pow') { m.on = !m.on; m.shift = false; return update(); }
+    if (!m.on) return flash('Allumez d’abord le multimètre (⏻).');
+    if (b === 'SHIFT') m.shift = !m.shift;
+    else if (b === 'DCV') setMode(m, m.shift ? 'DCI' : 'DCV');
+    else if (b === 'ACV') setMode(m, m.shift ? 'ACI' : 'ACV');
+    else if (b === 'OHM') setMode(m, 'OHM');
+    else if (b === 'CAP') setMode(m, 'CAP');
+    else if (b === 'AUTO') { m.auto = !m.auto; m.shift = false; }
+    else if (b === 'UP' || b === 'DN') {
+      if (m.auto) m.auto = false;
+      m.range = clamp(m.range + (b === 'UP' ? 1 : -1), 0, E.RANGES[m.mode].length - 1);
+    }
+    update();
+  }
+  function startKnob(id, which) {
+    ui.knob = { id, which, t0: Date.now(), done: false };
+    ui.knob.timer = setTimeout(() => {
+      const a = S.alims[id]; ui.knob.done = true;
+      if (!a.on) { flash('Allumez d’abord l’alimentation (⏻).'); return render(); }
+      if (which === 'V') { a.lock = !a.lock; flash(a.lock ? 'Tension verrouillée (LOCK).' : 'Tension déverrouillée.'); }
+      else { a.ocp = !a.ocp; flash(a.ocp ? 'Mode OCP : réglez la limite de courant avec ↺ ↻ ou la molette.' : 'Limite de courant enregistrée. L’afficheur montre le courant débité.'); }
+      update();
+    }, 3000);
+    const loop = () => { if (ui.knob && !ui.knob.done) { render(); requestAnimationFrame(loop); } };
+    requestAnimationFrame(loop);
+  }
+  function endKnob() {
+    const k = ui.knob; if (!k) return;
+    clearTimeout(k.timer); ui.knob = null;
+    if (!k.done && Date.now() - k.t0 < 600) {
+      const a = S.alims[k.id];
+      if (k.which === 'V') a.vdigit = (a.vdigit + 1) % 4; else a.idigit = (a.idigit + 1) % 4;
+      update();
+    } else render();
+  }
+
+  // ---------- événements ----------
+  function svgPt(e) { const p = sv.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; const q = p.matrixTransform(sv.getScreenCTM().inverse()); return [q.x, q.y]; }
+  // priorité : tout élément sous un fil (douille, borne, composant, bouton) ; le fil seulement s'il n'y a rien dessous
+  function keyAt(x, y) {
+    let wire = null;
+    for (const el of document.elementsFromPoint(x, y)) {
+      const k = el.closest && el.closest('[data-k]'); if (!k) continue;
+      const key = k.getAttribute('data-k');
+      if (key.startsWith('wire:')) { if (!wire) wire = key; continue; }
+      return key;
+    }
+    return wire;
+  }
+  const toEndpoint = k => k && (k.startsWith('hole:') ? 'H:' + k.slice(5) : k.startsWith('term:') ? 'T:' + k.slice(5) : null);
+
+  function onDown(e) {
+    if (e.button === 2) return;
+    const pt = svgPt(e); ui.mouse = pt;
+    const k = keyAt(e.clientX, e.clientY);
+    if (ui.mode === 'placing') { ui.ghost = bestPlacement(ui.place.kind, pt); if (ui.ghost) commitPlace(); else flash('Position impossible ici : visez entre deux douilles libres de nœuds voisins.'); e.preventDefault(); return; }
+    if (!k) { if (ui.mode === 'wiring') { ui.mode = 'idle'; ui.wireStart = null; } ui.sel = null; render(); return; }
+    const [type, ...rest] = k.split(':');
+    if (type === 'hole' || type === 'term') {
+      const ek = toEndpoint(k);
+      if (ui.mode === 'wiring') finishWire(ek);
+      else { ui.mode = 'wiring'; ui.wireStart = ek; ui.wireDown = pt; ui.wireDragged = false; ui.sel = null; render(); }
+      e.preventDefault(); return;
+    }
+    if (ui.mode === 'wiring') { ui.mode = 'idle'; ui.wireStart = null; }
+    if (type === 'toggle') { const p = S.parts.find(q => q.id === rest[0]); if (p) { p.closed = !p.closed; ui.sel = { type: 'part', id: p.id }; update(); } e.preventDefault(); return; }
+    if (type === 'part') { ui.sel = { type: 'part', id: rest[0] }; ui.drag = { id: rest[0], start: pt, moved: false }; render(); e.preventDefault(); return; }
+    if (type === 'wire') { ui.sel = { type: 'wire', id: rest[0] }; render(); return; }
+    if (type === 'btn') { handleBtn(rest[0], rest.slice(1).join(':')); e.preventDefault(); return; }
+    if (type === 'knob') { startKnob(rest[0], rest[1]); e.preventDefault(); return; }
+  }
+  function onMove(e) {
+    if (!sv.getScreenCTM()) return;
+    const pt = svgPt(e); ui.mouse = pt;
+    if (ui.mode === 'placing') ui.ghost = bestPlacement(ui.place.kind, pt);
+    if (ui.drag) {
+      if (!ui.drag.moved && Math.hypot(pt[0] - ui.drag.start[0], pt[1] - ui.drag.start[1]) > 6) ui.drag.moved = true;
+      if (ui.drag.moved) { const p = S.parts.find(q => q.id === ui.drag.id); ui.ghost = p ? bestPlacement(p.kind, pt, p.id) : null; }
+    }
+    if (ui.mode === 'wiring' && ui.wireDown && Math.hypot(pt[0] - ui.wireDown[0], pt[1] - ui.wireDown[1]) > 10) ui.wireDragged = true;
+    const ek = toEndpoint(keyAt(e.clientX, e.clientY));
+    ui.hoverKey = ek;
+    if (ui.mode !== 'idle' || ui.drag || ek || ui._lastHover) scheduleRender();
+    ui._lastHover = ek;
+  }
+  function onUp(e) {
+    if (ui.knob) return endKnob();
+    if (ui.drag) {
+      if (ui.drag.moved && ui.ghost) { const p = S.parts.find(q => q.id === ui.drag.id); if (p) { p.a = ui.ghost.a; p.b = ui.ghost.b; } ui.drag = null; ui.ghost = null; return update(); }
+      ui.drag = null; ui.ghost = null; return render();
+    }
+    if (ui.mode === 'wiring' && ui.wireDragged) {
+      const ek = toEndpoint(keyAt(e.clientX, e.clientY));
+      if (ek && ek !== ui.wireStart) finishWire(ek);
+      ui.wireDragged = false; ui.wireDown = null;
+    }
+  }
+
+  // ---------- construction de la page ----------
+  const sv = document.getElementById('sv');
+  sv.setAttribute('viewBox', '0 0 1228 628');
+  const stat = document.createElementNS(NS, 'g'); stat.innerHTML = boardSVG(); sv.appendChild(stat);
+  const dyn = document.createElementNS(NS, 'g'); sv.appendChild(dyn);
+  const statusEl = document.getElementById('status'), infoEl = document.getElementById('info');
+
+  sv.addEventListener('pointerdown', onDown);
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
+  sv.addEventListener('contextmenu', e => e.preventDefault());
+  sv.addEventListener('wheel', e => {
+    const k = keyAt(e.clientX, e.clientY); if (!k || !k.startsWith('knob:')) return;
+    e.preventDefault(); const [, id, which] = k.split(':');
+    if (!S.alims[id].on) return flash('Allumez d’abord l’alimentation (⏻).');
+    rotate(id, which, e.deltaY < 0 ? 1 : -1);
+  }, { passive: false });
+  window.addEventListener('keydown', e => {
+    if (e.target.closest && e.target.closest('select,input,textarea')) return;
+    if (e.key === 'Escape') cancel();
+    if ((e.key === 'Delete' || e.key === 'Backspace') && ui.sel) { e.preventDefault(); deleteSel(); }
+  });
+
+  const rsel = document.getElementById('rval'), csel = document.getElementById('cval'), psel = document.getElementById('preset');
+  const lsel = document.getElementById('lval');
+  rsel.innerHTML = valueOptions('R', 470); csel.innerHTML = valueOptions('C', 100e-6); lsel.innerHTML = LAMPS.map((l, k) => `<option value="${k}">${l.label}</option>`).join('');
+  psel.innerHTML = '<option value="">Charger un circuit…</option>' + Object.entries(PR.LIST).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
+  psel.addEventListener('change', () => { if (!psel.value) return; S = stateFromPreset(psel.value); psel.value = ''; ui.sel = null; cancel(); update(); });
+  document.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => {
+    const kind = b.dataset.add;
+    const lamp = LAMPS[+lsel.value];
+    ui.mode = 'placing'; ui.sel = null; ui.place = { kind, nominal: kind === 'R' ? +rsel.value : kind === 'C' ? +csel.value : kind === 'L' ? lamp.v : 0, inom: kind === 'L' ? lamp.i : undefined };
+    ui.ghost = null; render();
+  }));
+  document.querySelectorAll('[data-col]').forEach(b => b.addEventListener('click', () => {
+    ui.color = b.dataset.col; document.querySelectorAll('[data-col]').forEach(x => x.classList.toggle('on', x === b));
+  }));
+  document.getElementById('study').addEventListener('change', e => { ui.study = e.target.checked; render(); });
+  document.getElementById('reroll').addEventListener('click', () => {
+    for (const p of S.parts) PR.redraw(p);
+    randomOffsets(S); update(); flash('Nouvelles valeurs réelles tirées dans les tolérances.');
+  });
+  const clr = document.getElementById('clear');
+  clr.addEventListener('click', () => {
+    if (Date.now() - ui.clearArm > 3000) { ui.clearArm = Date.now(); clr.textContent = 'Confirmer ?'; setTimeout(() => { clr.textContent = 'Tout effacer'; }, 3000); return; }
+    ui.clearArm = 0; clr.textContent = 'Tout effacer';
+    S.parts = []; S.wires = []; S.preset = null; ui.sel = null; cancel(); update();
+  });
+  const helpBox = document.getElementById('helpbox');
+  document.getElementById('help').addEventListener('click', () => { helpBox.hidden = !helpBox.hidden; });
+  infoEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if (!b) return;
+    if (b.dataset.act === 'del') return deleteSel();
+    const p = ui.sel && S.parts.find(q => q.id === ui.sel.id); if (!p) return;
+    if (b.dataset.act === 'toggle') { p.closed = !p.closed; infoEl._last = null; update(); }
+    if (b.dataset.act === 'replace') { p.burned = false; PR.redraw(p); infoEl._last = null; update(); flash('Ampoule remplacée.'); }
+  });
+  infoEl.addEventListener('change', e => {
+    const s = e.target.closest('[data-chg]'); if (!s || !ui.sel) return;
+    const p = S.parts.find(q => q.id === ui.sel.id); if (!p) return;
+    if (s.dataset.chg === 'L') { const l = LAMPS[+s.value]; p.nominal = l.v; p.inom = l.i; p.burned = false; } else p.nominal = +s.value;
+    PR.redraw(p); infoEl._last = null; update();
+  });
+
+  setInterval(() => { if (R) { refreshDisplays(); if (!ui.drag && ui.mode === 'idle') render(); } }, 450);
+  update();
+  function setExamLock(on) {
+    ui.examLock = on;
+    for (const id of ['preset', 'reroll', 'study', 'clear']) document.getElementById(id).disabled = on;
+    if (on) { ui.study = false; document.getElementById('study').checked = false; }
+    document.body.classList.toggle('exam-on', on);
+    render();
+  }
+  window.__sim = { get S() { return S; }, get R() { return R; }, ui };
+  window.SimAPI = {
+    getS: () => S, getR: () => R, getDisp: () => disp,
+    setS: st => { S = st; ui.sel = null; ui.mode = 'idle'; ui.place = null; ui.ghost = null; ui.wireStart = null; ui.drag = null; update(); },
+    stateFromPreset, freshMeters, update, flash, setExamLock,
+  };
+})();
+
+// ===================== Mode examen =====================
+(() => {
+  const E = Engine, API = window.SimAPI;
+  const UF = { V: 1, mV: 1e3, mA: 1e3, 'µA': 1e6, 'kΩ': 1e-3, 'MΩ': 1e-6, 'Ω': 1 };
+  const STORE = 'platine-exam-v1';
+  const nodeKey = n => { const nr = Math.floor((n - 1) / 4), nc = (n - 1) % 4; return `H:${3 * nr + 1}:${3 * nc + 1}`; };
+  const comma = s => String(s).replace('.', ',');
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const parseNum = s => { if (s == null) return NaN; const t = String(s).trim().replace(/\s/g, '').replace(',', '.').replace('−', '-'); return t === '' ? NaN : Number(t); };
+  const sig = (x, n = 3) => (x === 0 || !isFinite(x)) ? comma(String(x)) : comma(Number(x.toPrecision(n)).toString());
+
+  // ---------- banque de défis ----------
+  const OUI_NON = ['Oui', 'Non'];
+  const CH = [
+    {
+      id: 'l1-ohm', title: 'Labo 1 · Loi d’Ohm (circuit série)', preset: 'l1c1',
+      alims: { alim1: { vset: 12, ilim: 0.010 } },
+      points: { a: 1, b: 2, c: 3, d: 7, e: 6 },
+      setup: 'Allumez l’alimentation 1 et réglez ε = 12,00 V, limite de courant 10 mA (mode OCP). Points : a = nœud 1, b = nœud 2, c = nœud 3, d = nœud 7, e = nœud 6.',
+      qs: [
+        { id: 'eps', text: 'Mesurez ε = V_a − V_e (rouge sur a, noir sur e).', meas: { mode: 'DCV', hot: 'a', lo: 'e' }, unit: 'V', unc: true, range: true, explain: 'Voltmètre en parallèle sur la source ; échelle 20 V ; δ = 0,015 % × L + 8 × 0,0001 V.' },
+        { id: 'R1', text: 'Mesurez R₁ (470 Ω) hors circuit. Glissez-la dans un coin libre de la platine (ou éteignez et débranchez l’alimentation), mesurez, puis remettez-la.', meas: { mode: 'OHM', part: 1 }, unit: 'kΩ', unc: true, range: true, explain: 'L’ohmmètre génère son propre courant : aucune autre source ne doit être branchée. Échelle 2 kΩ ; δ = 0,02 % × L + 6 × 0,00001 kΩ + 0,0002 kΩ.' },
+        { id: 'V1', text: 'Mesurez ΔV₁ = V_c − V_b (rouge sur c, noir sur b).', meas: { mode: 'DCV', hot: 'c', lo: 'b' }, unit: 'V', unc: true, range: true, explain: 'Le courant va de b vers c dans R₁ : le potentiel baisse, donc ΔV₁ < 0.' },
+        { id: 'I', text: 'Retirez le connecteur entre a et b et insérez l’ampèremètre (bornes C et B). Mesurez le courant et son sens.', meas: { mode: 'DCI', strap: 0, from: 'a', to: 'b' }, unit: 'mA', unc: true, range: true, dir: ['de a vers b', 'de b vers a'], explain: 'Ampèremètre en série, fil rouge en C. Valeur positive = le courant entre par la borne C. Échelle 20 mA ; δ = 0,095 % × L + 40 × 0,0001 mA.' },
+        { id: 'I1', text: 'Calculez I₁ = |ΔV₁| / R₁ et son incertitude à partir de vos mesures.', calc: 'ohm', refs: ['V1', 'R1'], unit: 'mA', unc: true, explain: 'Quotient : les incertitudes relatives s’additionnent, δI/I = δV/|V| + δR/R.' },
+        { id: 'cmp', text: 'I₁ (calculé) et I (mesuré) sont-ils compatibles ?', choice: OUI_NON, answer: c => Math.abs(c.val('I1') - Math.abs(c.val('I'))) <= c.unc('I1') + c.unc('I') ? 0 : 1, explain: 'Compatibles si |I₁ − I| ≤ δI₁ + δI (les intervalles se chevauchent). Éléments en série : même courant.' },
+      ],
+    },
+    {
+      id: 'l1-noeuds', title: 'Labo 1 · Résistances en parallèle', preset: 'l1c2',
+      alims: { alim1: { vset: 12, ilim: 0.020 } },
+      points: { a: 1, b: 2, c: 3, d: 7, e: 6, f: 11, n10: 10 },
+      setup: 'Alimentation 1 : ε = 12,00 V, limite 20 mA (le courant approche 10 mA dans ce circuit). Points : a = 1, b = 2, c = 3, d = 7, e = 6, f = 11 ; R₃ va de d à f, et f rejoint e par les nœuds 10.',
+      qs: [
+        { id: 'V2', text: 'Mesurez ΔV₂ = V_e − V_d.', meas: { mode: 'DCV', hot: 'e', lo: 'd' }, unit: 'V', unc: true, range: true, explain: 'Le courant descend de d vers e dans R₂ : ΔV₂ < 0.' },
+        { id: 'V3', text: 'Mesurez ΔV₃ = V_f − V_d.', meas: { mode: 'DCV', hot: 'f', lo: 'd' }, unit: 'V', range: true, explain: 'f et e sont reliés par des connecteurs : même potentiel.' },
+        { id: 'why', text: 'Pourquoi ΔV₂ = ΔV₃ ?', choice: ['R₂ et R₃ partagent les mêmes deux bornes (en parallèle)', 'R₂ et R₃ sont traversées par le même courant (en série)', 'Parce que R₂ = R₃'], answer: 0, explain: 'Des éléments en parallèle ont nécessairement la même différence de potentiel.' },
+        { id: 'Io', text: 'Remplacez le connecteur a–b par l’ampèremètre. Mesurez I₀ et son sens.', meas: { mode: 'DCI', strap: 0, from: 'a', to: 'b' }, unit: 'mA', unc: true, range: true, dir: ['de a vers b', 'de b vers a'], explain: 'Courant total ≈ ε / (R₁ + R₂∥R₃) ≈ 9,8 mA.' },
+        { id: 'I3', text: 'Remettez le connecteur a–b. Remplacez le connecteur entre f (nœud 11) et le nœud 10 par l’ampèremètre. Mesurez I₃ et son sens.', meas: { mode: 'DCI', strap: 5, from: 'f', to: 'n10' }, unit: 'mA', unc: true, range: true, dir: ['de f vers le nœud 10', 'du nœud 10 vers f'], explain: 'Le courant de R₃ arrive en f puis retourne vers e.' },
+        { id: 'I2', text: 'Calculez I₂ = I₀ − I₃ (loi des nœuds) et son incertitude.', calc: 'diff', refs: ['Io', 'I3'], unit: 'mA', unc: true, explain: 'Différence : les incertitudes absolues s’additionnent.' },
+        { id: 'R2c', text: 'Calculez R₂ = |ΔV₂| / I₂ et son incertitude.', calc: 'ohmR', refs: ['V2', 'I2'], unit: 'kΩ', unc: true, explain: 'Quotient : incertitudes relatives additionnées.' },
+        { id: 'tol', text: 'La valeur calculée de R₂ est-elle dans sa tolérance (1,0 kΩ ± 5 %) ?', choice: OUI_NON, answer: c => { const r = c.val('R2c'); return r >= 0.95 && r <= 1.05 ? 0 : 1; }, explain: 'Intervalle de tolérance : [0,95 ; 1,05] kΩ.' },
+      ],
+    },
+    {
+      id: 'l2-req', title: 'Labo 2 · Résistances équivalentes', preset: 'l2c1',
+      alims: {},
+      points: { a: 1, b: 2, c: 3, d: 7, e: 6, f: 5 },
+      setup: 'Aucune source dans ce défi. Anneau a–R₁–b–R₂–c–d–R₄–e–R₃–f–a ; a = nœud 1, b = 2, c = 3, d = 7, e = 6, f = 5.',
+      qs: [
+        { id: 'Rab', text: 'Mesurez R_ab.', meas: { mode: 'OHM', hot: 'a', lo: 'b' }, unit: 'kΩ', unc: true, range: true, explain: 'R_ab = R₁ ∥ (R₂ + R₄ + R₃).' },
+        { id: 'Rbe', text: 'Mesurez R_be.', meas: { mode: 'OHM', hot: 'b', lo: 'e' }, unit: 'kΩ', unc: true, range: true, explain: 'R_be = (R₁ + R₃) ∥ (R₂ + R₄) ; échelle 20 kΩ.' },
+        { id: 'Rac', text: 'Mesurez R_ac.', meas: { mode: 'OHM', hot: 'a', lo: 'c' }, unit: 'kΩ', range: true, explain: 'R_ac = (R₁ + R₂) ∥ (R₃ + R₄).' },
+        { id: 'why', text: 'Pourquoi R_ab est-elle plus petite que R₁ ?', choice: ['R₁ est en parallèle avec R₂ + R₄ + R₃', 'R₁ est en série avec R₂', 'L’ohmmètre ajoute sa résistance interne'], answer: 0, explain: 'L’ohmmètre « voit » tous les chemins entre ses deux bornes.' },
+        { id: 'rule', text: 'Avant de mesurer une résistance à l’ohmmètre, il faut…', choice: ['qu’aucune source ne soit branchée dans le circuit', 'brancher l’ohmmètre en série', 'régler la limite de courant à 10 mA'], answer: 0, explain: 'L’ohmmètre calcule R = ΔV / I avec son propre courant ; une autre source fausse ΔV.' },
+      ],
+    },
+    {
+      id: 'l2-pot', title: 'Labo 2 · Potentiels, nœuds et mailles', preset: 'l2c2',
+      alims: { alim1: { vset: 12, ilim: 0.020 } },
+      points: { a: 5, b: 3, c: 2, d: 7, e: 6 },
+      setup: 'Alimentation 1 : ε = 12,00 V, limite 20 mA. a = nœud 5 (borne −, potentiel de référence V_a = 0). Fil du haut : b = nœud 3 (borne +), c = nœud 2, d = nœud 7. e = nœud 6.',
+      qs: [
+        { id: 'Vb', text: 'Mesurez V_b (noir sur a).', meas: { mode: 'DCV', hot: 'b', lo: 'a' }, unit: 'V', range: true, explain: 'V_b = ε.' },
+        { id: 'Vd', text: 'Mesurez V_d.', meas: { mode: 'DCV', hot: 'd', lo: 'a' }, unit: 'V', range: true, explain: 'b, c et d sont sur le même fil : même potentiel.' },
+        { id: 'Ve', text: 'Mesurez V_e.', meas: { mode: 'DCV', hot: 'e', lo: 'a' }, unit: 'V', unc: true, range: true, explain: 'V_e = R₁ I = ε R₁ / (R₁ + R₂∥R₃).' },
+        { id: 'cnt', text: 'Combien le circuit 2 possède-t-il de nœuds, de branches et de mailles ?', ints: [{ key: 'n', label: 'Nœuds', answer: 2 }, { key: 'b', label: 'Branches', answer: 3 }, { key: 'm', label: 'Mailles', answer: 3 }], explain: 'Nœuds : le fil du haut et e. Branches : source + R₁, R₃, R₂. Mailles : tout chemin fermé, y compris la boucle extérieure.' },
+        { id: 'r12', text: 'R₁ et R₂ sont…', choice: ['en série', 'en parallèle', 'ni en série ni en parallèle'], answer: 2, explain: 'R₁ est en série avec l’ensemble R₂∥R₃, pas avec R₂ seule.' },
+        { id: 'r23', text: 'R₂ et R₃ sont…', choice: ['en série', 'en parallèle', 'ni en série ni en parallèle'], answer: 1, explain: 'Elles partagent les bornes e et le fil du haut.' },
+        { id: 'node', text: 'La présence d’un nœud crée-t-elle une différence de potentiel ?', choice: ['Non : V_b = V_c = V_d', 'Oui : le potentiel chute à chaque nœud'], answer: 0, explain: 'Seul un courant qui traverse un élément résistif crée une ΔV.' },
+      ],
+    },
+    {
+      id: 'l2-cond', title: 'Labo 2 · Condensateur en régime permanent', preset: 'l2c3',
+      alims: { alim1: { vset: 12, ilim: 0.010 } },
+      points: { a: 5, c: 2, d: 3, e: 6, f: 7 },
+      setup: 'Alimentation 1 : ε = 12,00 V, limite 10 mA. c = nœud 2, d = nœud 3 (haut du condensateur, borne +), f = nœud 7 (bas du condensateur), e = nœud 6, a = nœud 5.',
+      qs: [
+        { id: 'Vce', text: 'Mesurez V_c − V_e.', meas: { mode: 'DCV', hot: 'c', lo: 'e' }, unit: 'V', unc: true, range: true, explain: 'Plus de courant dans R₂ : il reste ε, R₁ et R₃ en série, V_c − V_e = ε R₃ / (R₁ + R₃).' },
+        { id: 'Vdf', text: 'Mesurez V_d − V_f.', meas: { mode: 'DCV', hot: 'd', lo: 'f' }, unit: 'V', range: true, explain: 'V_d = V_c et V_f = V_e, donc même valeur que V_c − V_e.' },
+        { id: 'Vfe', text: 'Mesurez V_f − V_e (en mV).', meas: { mode: 'DCV', hot: 'f', lo: 'e' }, unit: 'mV', range: true, explain: 'Aucun courant dans R₂ : ΔV = R₂ × 0 = 0. Échelle 200 mV.' },
+        { id: 'why', text: 'Pourquoi V_f − V_e ≈ 0 ?', choice: ['Le condensateur chargé bloque le courant : aucun courant dans R₂', 'R₂ est court-circuitée par un fil', 'Le condensateur est déchargé'], answer: 0, explain: 'En régime permanent, un condensateur se comporte comme un circuit ouvert.' },
+      ],
+    },
+    {
+      id: 'l3-mailles', title: 'Labo 3 · Loi des mailles', preset: 'l3c1',
+      alims: { alim1: { vset: 2, ilim: 0.010 }, alim2: { vset: 15, ilim: 0.010 } },
+      points: { b: 1, c: 2, d: 3, a: 9, f: 10, e: 11 },
+      setup: 'Alim 1 : ε₁ = 2,00 V ; Alim 2 : ε₂ = 15,00 V ; limites 10 mA. b = nœud 1, c = nœud 2, d = nœud 3, a = nœud 9, f = nœud 10, e = nœud 11. Maille I : a → b → c → f → a.',
+      qs: [
+        { id: 'Vba', text: 'Mesurez V_b − V_a.', meas: { mode: 'DCV', hot: 'b', lo: 'a' }, unit: 'V', unc: true, range: true, explain: 'Échelle 2 V ; δ = 0,015 % × L + 6 × 0,00001 V.' },
+        { id: 'Vcb', text: 'Mesurez V_c − V_b.', meas: { mode: 'DCV', hot: 'c', lo: 'b' }, unit: 'V', unc: true, range: true, explain: 'C’est ε₁ (borne + du côté de c).' },
+        { id: 'Vfc', text: 'Mesurez V_f − V_c.', meas: { mode: 'DCV', hot: 'f', lo: 'c' }, unit: 'V', unc: true, range: true, explain: 'Le courant descend de c vers f dans R₂.' },
+        { id: 'S', text: 'Calculez ΣΔV sur la maille I et son incertitude.', calc: 'sum', refs: ['Vba', 'Vcb', 'Vfc'], unit: 'V', unc: true, explain: 'Somme : incertitudes absolues additionnées. V_a − V_f = 0 (fil).' },
+        { id: 'ok', text: 'La loi des mailles est-elle respectée sur la maille I ?', choice: OUI_NON, answer: c => Math.abs(c.val('S')) <= c.unc('S') ? 0 : 1, explain: 'Respectée si |ΣΔV − 0| ≤ δΣ.' },
+      ],
+    },
+    {
+      id: 'l3-noeuds', title: 'Labo 3 · Loi des nœuds', preset: 'l3c1',
+      alims: { alim1: { vset: 2, ilim: 0.010 }, alim2: { vset: 15, ilim: 0.010 } },
+      points: { b: 1, c: 2, d: 3, a: 9, f: 10, e: 11, r2: 6 },
+      setup: 'Alim 1 : ε₁ = 2,00 V ; Alim 2 : ε₂ = 15,00 V ; limites 10 mA. a = nœud 9, f = nœud 10, e = nœud 11 ; le bas de R₂ est le nœud 6. Pour chaque courant, remplacez le connecteur indiqué par l’ampèremètre, puis remettez-le.',
+      qs: [
+        { id: 'I1', text: 'I₁ : connecteur entre a et f.', meas: { mode: 'DCI', strap: 6, from: 'a', to: 'f' }, unit: 'mA', unc: true, range: true, dir: ['de a vers f', 'de f vers a'], explain: 'Échelle 2 mA ; δ = 0,055 % × L + 10 × 0,00001 mA.' },
+        { id: 'I2', text: 'I₂ : connecteur entre le bas de R₂ (nœud 6) et f.', meas: { mode: 'DCI', strap: 4, from: 'r2', to: 'f' }, unit: 'mA', unc: true, range: true, dir: ['de R₂ vers f', 'de f vers R₂'], explain: 'Échelle 20 mA.' },
+        { id: 'I3', text: 'I₃ : connecteur entre f et e.', meas: { mode: 'DCI', strap: 7, from: 'f', to: 'e' }, unit: 'mA', unc: true, range: true, dir: ['de f vers e', 'de e vers f'], explain: 'Échelle 20 mA.' },
+        { id: 'in', text: 'D’après vos sens mesurés, quels courants entrent dans le nœud f ?', choice: ['I₁ et I₂', 'I₁ et I₃', 'I₂ et I₃', 'I₃ seulement'], answer: 0, explain: 'I₁ (de a vers f) et I₂ (de R₂ vers f) entrent ; I₃ sort vers e.' },
+        { id: 'Sin', text: 'Calculez ΣI entrant et son incertitude.', calc: 'sumAbs', refs: ['I1', 'I2'], unit: 'mA', unc: true, explain: 'Incertitudes absolues additionnées.' },
+        { id: 'ok', text: 'La loi des nœuds est-elle respectée en f (ΣI entrant comparé à I₃) ?', choice: OUI_NON, answer: c => Math.abs(c.val('Sin') - Math.abs(c.val('I3'))) <= c.unc('Sin') + c.unc('I3') ? 0 : 1, explain: 'Respectée si |ΣI_entrant − ΣI_sortant| ≤ δ_entrant + δ_sortant.' },
+      ],
+    },
+    {
+      id: 'l3-volt', title: 'Labo 3 · Effet du voltmètre', preset: 'l3c2',
+      alims: { alim1: { vset: 12, ilim: 0.010 } },
+      points: { p1: 1, p2: 2, p3: 3 },
+      setup: 'Alimentation 1 : ε = 12,00 V, limite 10 mA. R₅ = 20 MΩ entre les nœuds 1 et 2 ; connecteur entre les nœuds 2 et 3. Le multimètre 2 servira de voltmètre (allumez-le).',
+      qs: [
+        { id: 'R5', text: 'Mesurez R₅ hors tension.', meas: { mode: 'OHM', part: 0 }, unit: 'MΩ', unc: true, range: true, explain: 'Échelle 100 MΩ ; δ = 1,75 % × L + 4 × 0,001 MΩ (+ 0,2 Ω).' },
+        { id: 'eps', text: 'Mesurez ε (nœud 1 par rapport au nœud 3).', meas: { mode: 'DCV', hot: 'p1', lo: 'p3' }, unit: 'V', range: true, explain: 'Le voltmètre en parallèle sur une source idéale lit ε.' },
+        { id: 'I0', text: 'Remplacez le connecteur 2–3 par l’ampèremètre (multimètre 1). Mesurez le courant sans voltmètre.', meas: { mode: 'DCI', strap: 1, from: 'p2', to: 'p3' }, unit: 'µA', range: true, explain: 'I = ε / R₅ ≈ 0,6 µA ; échelle 200 µA.' },
+        { id: 'IV', text: 'Ajoutez le multimètre 2 en voltmètre aux bornes de R₅. Mesurez de nouveau le courant.', meas: { mode: 'DCI', strap: 1, from: 'p2', to: 'p3', extra: { mode: 'DCV', hot: 'p1', lo: 'p2' } }, unit: 'µA', range: true, explain: 'I = ε (1/R₅ + 1/R_V).' },
+        { id: 'dir', text: 'Après l’ajout du voltmètre, le courant…', choice: ['augmente', 'diminue', 'reste le même'], answer: 0, explain: 'Le voltmètre ajoute un chemin en parallèle : la résistance équivalente diminue.' },
+        { id: 'RV', text: 'Calculez la résistance interne du voltmètre : R_V = ε / (I − ε / R₅).', calc: 'rv', refs: ['eps', 'R5', 'IV'], unit: 'MΩ', explain: 'Le courant dans le voltmètre est I_V = I − ε/R₅, et R_V = ε / I_V (≈ 10 MΩ).' },
+        { id: 'why', text: 'Pourquoi le voltmètre perturbe-t-il autant ce circuit ?', choice: ['R_V n’est pas beaucoup plus grande que R₅', 'Le voltmètre est branché en série', 'L’alimentation passe en mode CC'], answer: 0, explain: 'I_V / I_R = R₅ / R_V ≈ 2 : le voltmètre détourne plus de courant que R₅ n’en reçoit.' },
+      ],
+    },
+  ];
+
+  // ---------- calcul des valeurs attendues ----------
+  function probe(snap, remove, meters) {
+    const st = JSON.parse(JSON.stringify(snap));
+    st.parts = st.parts.filter(p => !remove.includes(p.id));
+    st.meters = { mm1: { on: false, mode: 'DCV', auto: true, range: 0 }, mm2: { on: false, mode: 'DCV', auto: true, range: 0 } };
+    for (const m of meters) {
+      st.meters[m.m] = { on: true, mode: m.mode, auto: true, range: 0, shift: false };
+      st.wires.push({ id: 'x' + m.m + 'h', from: `T:${m.m}:${m.mode === 'DCI' ? 'C' : 'A'}`, to: m.hot }, { id: 'x' + m.m + 'l', from: `T:${m.m}:B`, to: m.lo });
+    }
+    return E.solve(st).meters.mm1;
+  }
+  function expectMeas(ch, q, snap) {
+    const m = q.meas, pt = n => nodeKey(ch.points[n]);
+    let r;
+    if (m.part != null) {
+      const p = snap.parts[m.part];
+      const iso = { parts: [p], wires: [], alims: { alim1: { on: false }, alim2: { on: false } } };
+      r = probe(iso, [], [{ m: 'mm1', mode: 'OHM', hot: `H:${p.a[0]}:${p.a[1]}`, lo: `H:${p.b[0]}:${p.b[1]}` }]);
+    } else {
+      const remove = m.strap != null ? [snap.parts[m.strap].id] : [];
+      const meters = [{ m: 'mm1', mode: m.mode, hot: pt(m.hot || m.from), lo: pt(m.lo || m.to) }];
+      if (m.extra) meters.push({ m: 'mm2', mode: m.extra.mode, hot: pt(m.extra.hot), lo: pt(m.extra.lo) });
+      r = probe(snap, remove, meters);
+    }
+    const rg = E.RANGES[m.mode][r.range];
+    return { si: r.value, rg, ol: r.ol };
+  }
+
+  // ---------- état de l'examen ----------
+  let X = null;
+  function loadX() { try { const x = JSON.parse(localStorage.getItem(STORE)); if (x && x.chId && x.snap) return x; } catch (e) { } return null; }
+  function saveX() { try { if (X) localStorage.setItem(STORE, JSON.stringify(X)); else localStorage.removeItem(STORE); } catch (e) { } }
+  const chOf = id => CH.find(c => c.id === id);
+
+  function start(id) {
+    const ch = chOf(id);
+    const st = API.stateFromPreset(ch.preset);
+    st.meters = API.freshMeters();
+    const snap = JSON.parse(JSON.stringify(st));
+    for (const a of ['alim1', 'alim2']) {
+      const want = ch.alims[a];
+      st.alims[a] = { ...st.alims[a], on: false, vset: 0, ilim: 0, ocp: false, lock: false, vdigit: 1, idigit: 2 };
+      snap.alims[a] = want ? { ...snap.alims[a], on: true, vset: want.vset, ilim: want.ilim } : { ...snap.alims[a], on: false };
+    }
+    X = { chId: id, snap, ans: {}, res: null, t0: Date.now(), tEnd: null };
+    saveX();
+    API.setS(st);
+    API.setExamLock(true);
+    renderPanel();
+  }
+  function quit() { X = null; saveX(); API.setExamLock(false); renderPanel(); }
+
+  // ---------- correction ----------
+  function grade() {
+    const ch = chOf(X.chId), res = { fields: {}, notes: {}, score: 0, total: 0 };
+    const expV = {}, expU = {}, unitOf = {};
+    const user = k => parseNum(X.ans[k]);
+    const ctx = {
+      val: ref => { const u = user(ref + '.v'); return isNaN(u) ? expV[ref] : u; },
+      unc: ref => { const u = user(ref + '.u'); return isNaN(u) ? (expU[ref] ?? 0) : Math.abs(u); },
+    };
+    const mark = (key, ok, exp) => { res.fields[key] = { ok, exp }; res.total++; if (ok) res.score++; };
+    const toSI = ref => ctx.val(ref) / UF[unitOf[ref]], uSI = ref => ctx.unc(ref) / UF[unitOf[ref]];
+
+    for (const q of ch.qs) {
+      unitOf[q.id] = q.unit;
+      if (q.meas) {
+        const e = expectMeas(ch, q, X.snap), f = UF[q.unit];
+        let E0 = e.si * f; if (q.dir) E0 = Math.abs(E0);
+        const resU = 10 ** -e.rg.dec / e.rg.k * f, dec = Math.max(0, Math.round(-Math.log10(resU)));
+        expV[q.id] = E0;
+        const uv = user(q.id + '.v'), uvAbs = q.dir ? Math.abs(uv) : uv;
+        const tol = Math.max(5 * resU, 0.002 * Math.abs(E0));
+        mark(q.id + '.v', !isNaN(uv) && Math.abs(uvAbs - E0) <= tol, `≈ ${comma(E0.toFixed(dec))} ${q.unit}`);
+        const ref = isNaN(uv) ? E0 : uvAbs;
+        const uDisp = E.uncertainty(e.rg, ref / f * e.rg.k);
+        expU[q.id] = uDisp == null ? 0 : uDisp / e.rg.k * f;
+        if (q.unc) {
+          const uu = user(q.id + '.u'), ue = expU[q.id];
+          mark(q.id + '.u', !isNaN(uu) && Math.abs(Math.abs(uu) - ue) <= 0.12 * ue, `≈ ${sig(ue, 2)} ${q.unit} (échelle ${e.rg.label})`);
+        }
+        if (q.range) mark(q.id + '.r', X.ans[q.id + '.r'] === e.rg.label, e.rg.label);
+        if (q.dir) { const di = e.si >= 0 ? 0 : 1; mark(q.id + '.d', X.ans[q.id + '.d'] === String(di), q.dir[di]); }
+      } else if (q.calc) {
+        let v, u = null;
+        const r = q.refs;
+        if (q.calc === 'ohm') { const V = toSI(r[0]), R = toSI(r[1]), I = Math.abs(V) / R; v = I * UF[q.unit]; u = v * (uSI(r[0]) / Math.abs(V) + uSI(r[1]) / R); }
+        if (q.calc === 'ohmR') { const V = toSI(r[0]), I = Math.abs(toSI(r[1])), R = Math.abs(V) / I; v = R * UF[q.unit]; u = v * (uSI(r[0]) / Math.abs(V) + uSI(r[1]) / I); }
+        if (q.calc === 'diff') { v = (Math.abs(toSI(r[0])) - Math.abs(toSI(r[1]))) * UF[q.unit]; u = (uSI(r[0]) + uSI(r[1])) * UF[q.unit]; }
+        if (q.calc === 'sum') { v = r.reduce((s, k) => s + toSI(k), 0) * UF[q.unit]; u = r.reduce((s, k) => s + uSI(k), 0) * UF[q.unit]; }
+        if (q.calc === 'sumAbs') { v = r.reduce((s, k) => s + Math.abs(toSI(k)), 0) * UF[q.unit]; u = r.reduce((s, k) => s + uSI(k), 0) * UF[q.unit]; }
+        if (q.calc === 'rv') { const eps = toSI(r[0]), R5 = toSI(r[1]), I = Math.abs(toSI(r[2])); v = eps / (I - eps / R5) * UF[q.unit]; }
+        expV[q.id] = v; expU[q.id] = u ?? 0;
+        const uv = user(q.id + '.v');
+        const tol = (q.calc === 'sum') ? Math.max(0.004 * Math.abs(v), 0.05 * (u || 0), 1e-6) : Math.max(0.004 * Math.abs(v), 1e-9);
+        mark(q.id + '.v', !isNaN(uv) && Math.abs(uv - v) <= tol, `avec vos valeurs : ${sig(v, 4)} ${q.unit}`);
+        if (q.unc) { const uu = user(q.id + '.u'); mark(q.id + '.u', !isNaN(uu) && Math.abs(Math.abs(uu) - u) <= 0.12 * u + 1e-12, `avec vos valeurs : ${sig(u, 2)} ${q.unit}`); }
+      } else if (q.choice) {
+        const ans = typeof q.answer === 'function' ? q.answer(ctx) : q.answer;
+        mark(q.id + '.c', X.ans[q.id + '.c'] === String(ans), q.choice[ans]);
+      } else if (q.ints) {
+        for (const it of q.ints) mark(`${q.id}.${it.key}`, parseNum(X.ans[`${q.id}.${it.key}`]) === it.answer, String(it.answer));
+      }
+      res.notes[q.id] = q.explain;
+    }
+    return res;
+  }
+
+  // ---------- rendu du panneau ----------
+  const panel = document.getElementById('exam'), body = document.getElementById('exam-body');
+  function fmtTime(ms) { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
+  function fieldInput(key, unit, label) {
+    return `<label>${label} <input data-f="${key}" inputmode="decimal" autocomplete="off" value="${esc(X.ans[key] ?? '')}">${unit ? ' ' + unit : ''}</label>`;
+  }
+  function select(key, opts, label) {
+    return `<label>${label} <select data-f="${key}"><option value="">—</option>${opts.map(([v, t]) => `<option value="${esc(v)}" ${X.ans[key] === v ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`;
+  }
+  function qHTML(q, i) {
+    let f = '';
+    if (q.meas || q.calc) {
+      f += fieldInput(q.id + '.v', q.unit, q.dir ? 'Valeur |I|' : 'Valeur');
+      if (q.unc) f += fieldInput(q.id + '.u', q.unit, '±');
+      if (q.range) f += select(q.id + '.r', E.RANGES[q.meas.mode].map(r => [r.label, r.label]), 'Échelle');
+      if (q.dir) f += select(q.id + '.d', q.dir.map((t, k) => [String(k), t]), 'Sens');
+    } else if (q.choice) f += select(q.id + '.c', q.choice.map((t, k) => [String(k), t]), 'Réponse');
+    else if (q.ints) f += q.ints.map(it => fieldInput(`${q.id}.${it.key}`, '', it.label)).join('');
+    let fb = '';
+    if (X.res) {
+      const lines = Object.entries(X.res.fields).filter(([k]) => k.startsWith(q.id + '.')).map(([k, r]) => {
+        const what = { v: 'valeur', u: 'incertitude', r: 'échelle', d: 'sens', c: 'réponse' }[k.split('.')[1]] || k.split('.')[1];
+        const name = q.ints ? (q.ints.find(it => it.key === k.split('.')[1]) || {}).label : what;
+        return r.ok ? `<span class="good">✓ ${name}</span>` : `<span class="wrong">✗ ${name} — attendu : ${esc(r.exp)}</span>`;
+      });
+      fb = `<div class="fb">${lines.join('')}${X.res.notes[q.id] ? `<span class="exp">${esc(X.res.notes[q.id])}</span>` : ''}</div>`;
+    }
+    return `<div class="q"><div class="qt"><span class="qn">${i + 1}.</span>${esc(q.text)}</div><div class="fields">${f}</div>${fb}</div>`;
+  }
+  function renderPanel() {
+    document.getElementById('examBtn').classList.toggle('on', !!X || !panel.hidden);
+    if (panel.hidden) return;
+    if (!X) {
+      body.innerHTML = `<div class="ex-head"><h2>Mode examen</h2><button data-x="close">Fermer</button></div>
+        <p class="muted" style="margin:0 0 6px">Choisissez un défi. Le circuit est chargé avec de nouvelles valeurs réelles ; les alimentations sont éteintes et à 0 : réglez-les vous-même. Le mode étude est désactivé pendant l’examen.</p>
+        <div class="ex-list">${CH.map(c => `<button data-start="${c.id}">${esc(c.title)} <span class="muted">· ${c.qs.length} questions</span></button>`).join('')}</div>
+        <button class="primary" data-start="__rand">Défi au hasard</button>`;
+      return;
+    }
+    const ch = chOf(X.chId);
+    let h = `<div class="ex-head"><h2>${esc(ch.title)}</h2><span class="ex-timer" id="ex-timer">${fmtTime((X.tEnd || Date.now()) - X.t0)}</span></div>`;
+    h += `<div class="ex-setup">${esc(ch.setup)}<br><span class="muted">Valeurs : virgule ou point acceptés. Incertitudes : 2 chiffres significatifs. Courants : donnez |I| et choisissez le sens.</span></div>`;
+    if (X.res) h += `<div class="score">Résultat : ${X.res.score} / ${X.res.total}</div>`;
+    h += ch.qs.map(qHTML).join('');
+    h += `<div class="ex-actions"><button class="primary" data-x="grade">${X.res ? 'Corriger de nouveau' : 'Corriger'}</button><button data-x="restart">Recommencer (nouvelles valeurs)</button><button data-x="list">Autre défi</button><button data-x="quit">Quitter l’examen</button></div>`;
+    body.innerHTML = h;
+  }
+
+  body.addEventListener('input', e => {
+    const f = e.target.closest('[data-f]'); if (!f || !X) return;
+    X.ans[f.dataset.f] = f.value; saveX();
+  });
+  body.addEventListener('change', e => {
+    const f = e.target.closest('[data-f]'); if (!f || !X) return;
+    X.ans[f.dataset.f] = f.value; saveX();
+  });
+  body.addEventListener('click', e => {
+    const s = e.target.closest('[data-start]');
+    if (s) { const id = s.dataset.start === '__rand' ? CH[Math.floor(Math.random() * CH.length)].id : s.dataset.start; start(id); body.scrollTop = 0; panel.scrollTop = 0; return; }
+    const b = e.target.closest('[data-x]'); if (!b) return;
+    const a = b.dataset.x;
+    if (a === 'close') { panel.hidden = true; document.body.classList.remove('exam-on'); renderPanel(); }
+    if (a === 'grade') {
+      X.res = grade(); if (!X.tEnd) X.tEnd = Date.now(); saveX(); renderPanel();
+      for (const [k, r] of Object.entries(X.res.fields)) { const el = body.querySelector(`[data-f="${CSS.escape(k)}"]`); if (el) el.classList.add(r.ok ? 'ok' : 'bad'); }
+    }
+    if (a === 'restart') start(X.chId);
+    if (a === 'list') { quit(); }
+    if (a === 'quit') { quit(); panel.hidden = true; document.body.classList.remove('exam-on'); renderPanel(); }
+  });
+  document.getElementById('examBtn').addEventListener('click', () => {
+    panel.hidden = !panel.hidden;
+    if (panel.hidden) { if (X) API.setExamLock(true); document.body.classList.remove('exam-on'); }
+    else document.body.classList.add('exam-on');
+    renderPanel();
+  });
+  setInterval(() => { const t = document.getElementById('ex-timer'); if (t && X && !X.tEnd) t.textContent = fmtTime(Date.now() - X.t0); }, 1000);
+
+  // reprise d'un examen en cours
+  X = loadX();
+  if (X && chOf(X.chId)) { panel.hidden = false; API.setExamLock(true); renderPanel(); if (X.res) body.querySelector('[data-x="grade"]').click(); }
+  else X = null;
+
+  // accès pour les tests automatisés
+  window.__exam = {
+    CH, get X() { return X; }, start, grade,
+    fillExpected() {
+      const ch = chOf(X.chId);
+      const fake = () => { };
+      // première passe : mesures
+      for (const q of ch.qs) if (q.meas) {
+        const e = expectMeas(ch, q, X.snap), f = UF[q.unit]; let v = e.si * f; if (q.dir) v = Math.abs(v);
+        X.ans[q.id + '.v'] = String(v); X.ans[q.id + '.r'] = e.rg.label; if (q.dir) X.ans[q.id + '.d'] = e.si >= 0 ? '0' : '1';
+        if (q.unc) { const u = E.uncertainty(e.rg, v / f * e.rg.k); X.ans[q.id + '.u'] = String(u / e.rg.k * f); }
+      }
+      // passes suivantes : calculs et choix à partir de la correction
+      for (let pass = 0; pass < 3; pass++) {
+        const r = grade();
+        for (const q of ch.qs) {
+          if (q.calc) { X.ans[q.id + '.v'] = String(parseFloat(r.fields[q.id + '.v'].exp.replace('avec vos valeurs : ', '').replace(',', '.'))); if (q.unc) X.ans[q.id + '.u'] = String(parseFloat(r.fields[q.id + '.u'].exp.replace('avec vos valeurs : ', '').replace(',', '.'))); }
+          if (q.choice) X.ans[q.id + '.c'] = String(q.choice.indexOf(r.fields[q.id + '.c'].exp));
+          if (q.ints) for (const it of q.ints) X.ans[`${q.id}.${it.key}`] = String(it.answer);
+        }
+      }
+      fake(); renderPanel();
+    },
+  };
+})();
+
+</script>
+</body>
+</html>
