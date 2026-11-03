@@ -62,6 +62,10 @@
   .appbar button:focus-visible, .appbar a:focus-visible, .appbar input:focus-visible { outline-color:var(--accent); }
   .danger:hover { color:#B02A2A; border-color:#E2A4A4; background:#FDF1F1; }
   #preset { min-width:220px; font-weight:500; }
+  .hist { display:inline-flex; }
+  .hist .icon { width:40px; padding:0; display:inline-flex; align-items:center; justify-content:center; }
+  .hist .icon:first-child { border-radius:8px 0 0 8px; }
+  .hist .icon + .icon { border-radius:0 8px 8px 0; border-left:0; }
 
   /* wire colour swatches */
   .sw { width:28px; min-height:28px; height:28px; padding:0; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px var(--line-strong); }
@@ -127,6 +131,7 @@
   #sv .hole, #sv .knob, #sv .btn { cursor:pointer; }
   #sv .part { cursor:grab; }
   #sv .wire { cursor:pointer; }
+  #sv .wend { cursor:grab; }
   #sv .toggle { cursor:pointer; }
   #sv .ghost { opacity:.55; pointer-events:none; }
   #sv .btn:active rect { filter:brightness(.9); }
@@ -249,6 +254,10 @@
       <div class="row">
         <select id="preset" aria-label="Charger un circuit"></select>
         <button id="reroll" type="button" title="Tirer de nouvelles valeurs réelles dans les tolérances">Nouveau tirage</button>
+        <span class="hist">
+          <button id="undoBtn" type="button" class="icon" title="Annuler (Ctrl+Z)" aria-label="Annuler (Ctrl+Z)" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+          <button id="redoBtn" type="button" class="icon" title="Rétablir (Ctrl+Y)" aria-label="Rétablir (Ctrl+Y)" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button>
+        </span>
         <button id="clear" type="button" class="danger">Tout effacer</button>
       </div>
     </div>
@@ -340,7 +349,8 @@
       <li>16 nœuds. Les 5 douilles d’une croix (centre + 4 bras) sont reliées entre elles ; les trous gris ne conduisent pas.</li>
       <li><b>Placer :</b> choisissez la valeur dans l’inventaire, puis glissez le composant sur la platine et relâchez-le là où doit se trouver le <i>milieu</i> de la plaquette ; l’aperçu montre où il sera posé. (Un simple clic sur le composant, puis un clic sur la platine, fonctionne aussi.) Une plaquette couvre 2 trous (centre d’un nœud → bras du voisin) ; un connecteur relie deux bras voisins.</li>
       <li><b>Déplacer :</b> glissez le corps du composant. <b>Modifier :</b> cliquez un composant ; une barre apparaît au-dessus avec sa valeur (menu ou boutons − / +, ou touches − / + du clavier). <b>Supprimer :</b> glissez le composant dans la corbeille, ou sélectionnez-le (ou un fil) puis cliquez la corbeille, le bouton « Supprimer » de la barre, ou la touche Suppr.</li>
-      <li><b>Fil :</b> cliquez une douille (ou une vis de plaquette) ou une borne d’appareil, puis une autre. Les fiches s’empilent. Échap annule.</li>
+      <li><b>Annuler / rétablir :</b> Ctrl+Z annule la dernière modification du circuit (composant posé, déplacé, supprimé, valeur changée, fil, circuit chargé, tout effacer) ; Ctrl+Y ou Ctrl+Maj+Z la rétablit. Les boutons ↶ ↷ de la barre Circuit font la même chose. Les réglages des appareils ne sont pas concernés.</li>
+      <li><b>Fil :</b> cliquez une douille (ou une vis de plaquette) ou une borne d’appareil, puis une autre. Les fiches s’empilent. Clic droit ou Échap annule le fil en cours. Pour déplacer un bout d’un fil existant, cliquez le fil, puis glissez une des poignées orange vers une autre douille ou borne.</li>
     </ul>
     <h2>Alimentation</h2>
     <ul>
@@ -892,7 +902,40 @@ if (typeof module !== 'undefined') module.exports = Presets;
   }
 
   // ---------- calcul ----------
+  // ---------- historique (Ctrl+Z / Ctrl+Y) ----------
+  // Chaque appel à update() compare le circuit (composants, fils, circuit chargé) au dernier état connu ;
+  // s'il a changé, l'état précédent est empilé. L'état « grillé » des ampoules est ignoré (c'est la simulation qui le change).
+  const H = { undo: [], redo: [], key: null, full: null, max: 100 };
+  const histKey = () => JSON.stringify({ p: S.parts.map(({ burned, ...q }) => q), w: S.wires, pr: S.preset || null });
+  const histFull = () => JSON.stringify({ parts: S.parts, wires: S.wires, preset: S.preset || null });
+  function recordHistory() {
+    const k = histKey();
+    if (H.key !== null && k !== H.key) { H.undo.push(H.full); if (H.undo.length > H.max) H.undo.shift(); H.redo = []; }
+    H.key = k; H.full = histFull(); syncHistBtns();
+  }
+  function resetHistory() { H.undo = []; H.redo = []; H.key = null; H.full = null; }
+  function restoreHistory(json) {
+    const o = JSON.parse(json);
+    S.parts = o.parts; S.wires = o.wires; S.preset = o.preset;
+    ui.sel = null; H.key = histKey(); H.full = json; update();
+  }
+  function undo() {
+    if (ui.mode !== 'idle' || ui.drag) { const w = ui.mode === 'wiring'; cancel(); return flash(w ? 'Fil annulé.' : 'Action annulée.'); }
+    if (!H.undo.length) return flash('Rien à annuler.');
+    H.redo.push(histFull()); restoreHistory(H.undo.pop()); flash('Annulé (Ctrl+Y pour rétablir).');
+  }
+  function redo() {
+    if (ui.mode !== 'idle' || ui.drag) { cancel(); return; }
+    if (!H.redo.length) return flash('Rien à rétablir.');
+    H.undo.push(histFull()); restoreHistory(H.redo.pop()); flash('Rétabli.');
+  }
+  function syncHistBtns() {
+    const u = document.getElementById('undoBtn'), r = document.getElementById('redoBtn');
+    if (u) u.disabled = !H.undo.length; if (r) r.disabled = !H.redo.length;
+  }
+
   function update() {
+    recordHistory();
     for (let k = 0; k < 5; k++) {
       R = E.solve(S);
       const fried = S.parts.filter(p => p.kind === 'L' && !p.burned && R.lamps[p.id] && R.lamps[p.id].burn);
@@ -992,8 +1035,24 @@ if (typeof module !== 'undefined') module.exports = Presets;
     const [x1, y1] = a, [x2, y2] = b, d = Math.hypot(x2 - x1, y2 - y1), sag = 26 + d * 0.16;
     return `M${x1},${y1} C${x1},${y1 + sag} ${x2},${y2 + sag} ${x2},${y2}`;
   }
+  function wireEnds(w) {
+    let a = pos(w.from), b = pos(w.to);
+    const d = ui.wdrag;
+    if (d && d.moved && d.id === w.id) {
+      const other = d.end === 'from' ? w.to : w.from;
+      const p = ui.hoverKey && ui.hoverKey !== other ? pos(ui.hoverKey) : ui.mouse;
+      if (d.end === 'from') a = p; else b = p;
+    }
+    return [a, b];
+  }
+  function wireHandles() {
+    if (!ui.sel || ui.sel.type !== 'wire' || ui.mode !== 'idle' || (ui.wdrag && ui.wdrag.moved)) return '';
+    const w = S.wires.find(q => q.id === ui.sel.id); if (!w) return '';
+    return ['from', 'to'].map(end => { const [x, y] = pos(w[end]);
+      return `<g data-k="wend:${w.id}:${end}" class="wend"><circle cx="${x}" cy="${y}" r="13" fill="rgba(255,176,32,.25)" stroke="#ffb020" stroke-width="3"/><circle cx="${x}" cy="${y}" r="4" fill="#ffb020"/></g>`; }).join('');
+  }
   function wireSVG(w) {
-    const a = pos(w.from), b = pos(w.to), d = wirePath(a, b), [c1, c2] = WIRE_COL[w.color] || WIRE_COL.black;
+    const [a, b] = wireEnds(w), d = wirePath(a, b), [c1, c2] = WIRE_COL[w.color] || WIRE_COL.black;
     const sel = ui.sel && ui.sel.type === 'wire' && ui.sel.id === w.id;
     return `<g data-k="wire:${w.id}" class="wire">${sel ? `<path d="${d}" stroke="#ffb020" stroke-width="11" fill="none" stroke-linecap="round"/>` : ''}<path d="${d}" stroke="${c2}" stroke-width="7" fill="none" stroke-linecap="round"/><path d="${d}" stroke="${c1}" stroke-width="4.5" fill="none" stroke-linecap="round"/><path d="${d}" stroke="transparent" stroke-width="16" fill="none"/>` +
       [a, b].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="7" fill="${c1}" stroke="${c2}" stroke-width="2"/>`).join('') + '</g>';
@@ -1100,6 +1159,7 @@ if (typeof module !== 'undefined') module.exports = Presets;
       s += partSVG(p, p.a, p.b, { sel });
     }
     for (const w of S.wires) s += wireSVG(w);
+    s += wireHandles();
     if (ui.mode === 'placing' && ui.ghost) s += partSVG({ kind: ui.place.kind, nominal: ui.place.nominal }, ui.ghost.a, ui.ghost.b, { ghost: true });
     if (ui.drag && ui.drag.moved && ui.ghost) { const p = S.parts.find(q => q.id === ui.drag.id); if (p) s += partSVG(p, ui.ghost.a, ui.ghost.b, { ghost: true, sel: true }); }
     if (ui.mode === 'wiring' && ui.wireStart) {
@@ -1151,8 +1211,8 @@ if (typeof module !== 'undefined') module.exports = Presets;
   }
   function renderInfo() {
     let h = '';
-    const st = ui.drag && ui.drag.moved ? (ui.overTrash ? 'Relâchez pour supprimer le composant.' : 'Déplacez le composant, ou glissez-le dans la corbeille pour le supprimer.') : ui.mode === 'placing' ? (ui.invDrag ? 'Relâchez au-dessus de la platine pour poser le composant. Échap pour annuler.' : 'Placement : visez le milieu de la plaquette et cliquez. Échap pour annuler.')
-      : ui.mode === 'wiring' ? 'Fil : cliquez sur une autre douille ou borne. Échap pour annuler.'
+    const st = ui.wdrag && ui.wdrag.moved ? 'Relâchez l’extrémité du fil sur une douille ou une borne. Échap pour annuler.' : ui.drag && ui.drag.moved ? (ui.overTrash ? 'Relâchez pour supprimer le composant.' : 'Déplacez le composant, ou glissez-le dans la corbeille pour le supprimer.') : ui.mode === 'placing' ? (ui.invDrag ? 'Relâchez au-dessus de la platine pour poser le composant. Échap pour annuler.' : 'Placement : visez le milieu de la plaquette et cliquez. Clic droit ou Échap pour annuler.')
+      : ui.mode === 'wiring' ? 'Fil : cliquez sur une autre douille ou borne. Clic droit ou Échap pour annuler.'
         : 'Glissez un composant de l’inventaire sur la platine. Cliquez une douille ou une borne pour tirer un fil.';
     statusEl.textContent = (ui.flash && Date.now() - ui.flashT < 4000) ? ui.flash : st;
     if (ui.sel && ui.sel.type === 'part') {
@@ -1206,7 +1266,7 @@ if (typeof module !== 'undefined') module.exports = Presets;
     S.wires.push(PR.wire(ui.wireStart, ek, autoColor(ui.wireStart, ek)));
     ui.mode = 'idle'; ui.wireStart = null; ui.hoverKey = null; update();
   }
-  function cancel() { ui.mode = 'idle'; ui.place = null; ui.ghost = null; ui.wireStart = null; ui.drag = null; if (ui.invDrag) { ui.invDrag = null; syncFloat(); } render(); }
+  function cancel() { ui.mode = 'idle'; ui.place = null; ui.ghost = null; ui.wireStart = null; ui.drag = null; ui.wdrag = null; if (ui.invDrag) { ui.invDrag = null; syncFloat(); } render(); }
   function deleteSel() {
     if (!ui.sel) return;
     if (ui.sel.type === 'part') S.parts = S.parts.filter(p => p.id !== ui.sel.id);
@@ -1266,7 +1326,7 @@ if (typeof module !== 'undefined') module.exports = Presets;
   }
   function updatePop() {
     const pop = document.getElementById('pop'); if (!pop) return;
-    const sel = ui.sel, busy = (ui.drag && ui.drag.moved) || ui.mode !== 'idle';
+    const sel = ui.sel, busy = (ui.drag && ui.drag.moved) || (ui.wdrag && ui.wdrag.moved) || ui.mode !== 'idle';
     const anchor = sel && !busy ? selAnchor(sel) : null;
     if (!anchor || !sv.getScreenCTM()) { pop.hidden = true; ui._popKey = null; return; }
     const p = sel.type === 'part' ? S.parts.find(q => q.id === sel.id) : null;
@@ -1370,7 +1430,7 @@ if (typeof module !== 'undefined') module.exports = Presets;
   const toEndpoint = k => k && (k.startsWith('hole:') ? 'H:' + k.slice(5) : k.startsWith('term:') ? 'T:' + k.slice(5) : null);
 
   function onDown(e) {
-    if (e.button === 2) return;
+    if (e.button === 2) { rightCancel(); return; }
     const pt = svgPt(e); ui.mouse = pt;
     const k = keyAt(e.clientX, e.clientY);
     if (ui.mode === 'placing') { ui.ghost = bestPlacement(ui.place.kind, pt); if (ui.ghost) commitPlace(); else flash('Position impossible ici : visez entre deux douilles libres de nœuds voisins.'); e.preventDefault(); return; }
@@ -1385,6 +1445,7 @@ if (typeof module !== 'undefined') module.exports = Presets;
     if (ui.mode === 'wiring') { ui.mode = 'idle'; ui.wireStart = null; }
     if (type === 'toggle') { const p = S.parts.find(q => q.id === rest[0]); if (p) { p.closed = !p.closed; ui.sel = { type: 'part', id: p.id }; update(); } e.preventDefault(); return; }
     if (type === 'part') { ui.sel = { type: 'part', id: rest[0] }; ui.drag = { id: rest[0], start: pt, moved: false }; render(); e.preventDefault(); return; }
+    if (type === 'wend') { ui.wdrag = { id: rest[0], end: rest[1], start: pt, moved: false }; e.preventDefault(); return; }
     if (type === 'wire') { ui.sel = { type: 'wire', id: rest[0] }; render(); return; }
     if (type === 'btn') { handleBtn(rest[0], rest.slice(1).join(':')); e.preventDefault(); return; }
     if (type === 'knob') { startKnob(rest[0], rest[1]); e.preventDefault(); return; }
@@ -1412,15 +1473,25 @@ if (typeof module !== 'undefined') module.exports = Presets;
         const p = S.parts.find(q => q.id === ui.drag.id); ui.ghost = (p && !over) ? bestPlacement(p.kind, pt, p.id) : null;
       }
     }
+    if (ui.wdrag && !ui.wdrag.moved && Math.hypot(pt[0] - ui.wdrag.start[0], pt[1] - ui.wdrag.start[1]) > 4) { ui.wdrag.moved = true; renderInfo(); }
     if (ui.mode === 'wiring' && ui.wireDown && Math.hypot(pt[0] - ui.wireDown[0], pt[1] - ui.wireDown[1]) > 10) ui.wireDragged = true;
     const ek = toEndpoint(keyAt(e.clientX, e.clientY));
     ui.hoverKey = ek;
-    if (ui.mode !== 'idle' || ui.drag || ek || ui._lastHover) scheduleRender();
+    if (ui.mode !== 'idle' || ui.drag || ui.wdrag || ek || ui._lastHover) scheduleRender();
     ui._lastHover = ek;
     if (ui.invDrag) syncFloat(e);
   }
   function onUp(e) {
     if (ui.knob) return endKnob();
+    if (ui.wdrag) {
+      const d = ui.wdrag; ui.wdrag = null;
+      if (!d.moved) return render();
+      const w = S.wires.find(q => q.id === d.id); if (!w) return render();
+      const ek = toEndpoint(keyAt(e.clientX, e.clientY)), other = d.end === 'from' ? w.to : w.from;
+      if (ek && ek !== other) { if (ek !== w[d.end]) { w[d.end] = ek; update(); flash('Extrémité du fil déplacée.'); } else render(); }
+      else { render(); flash(ek === other ? 'Les deux bouts du fil ne peuvent pas être sur la même douille.' : 'Relâchez l’extrémité sur une douille ou une borne.'); }
+      return;
+    }
     if (ui.invDrag) {
       const d = ui.invDrag; ui.invDrag = null; syncFloat();
       if (!d.moved) return;                 // simple clic : géré par l'événement click
@@ -1457,6 +1528,13 @@ if (typeof module !== 'undefined') module.exports = Presets;
   window.addEventListener('pointermove', onMove);
   window.addEventListener('pointerup', onUp);
   sv.addEventListener('contextmenu', e => e.preventDefault());
+  // clic droit n'importe où : annule le fil (ou le placement) en cours au lieu d'ouvrir le menu du navigateur
+  function rightCancel() {
+    if (ui.mode !== 'wiring' && ui.mode !== 'placing') return false;
+    const what = ui.mode === 'wiring' ? 'Fil annulé.' : 'Placement annulé.';
+    cancel(); flash(what); return true;
+  }
+  window.addEventListener('contextmenu', e => { if (rightCancel()) e.preventDefault(); });
   sv.addEventListener('wheel', e => {
     const k = keyAt(e.clientX, e.clientY); if (!k || !k.startsWith('knob:')) return;
     e.preventDefault(); const [, id, which] = k.split(':');
@@ -1466,6 +1544,11 @@ if (typeof module !== 'undefined') module.exports = Presets;
   window.addEventListener('keydown', e => {
     if (e.target.closest && e.target.closest('select,input,textarea')) return;
     if (e.key === 'Escape') cancel();
+    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+      const k = e.key.toLowerCase();
+      if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
+      if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); redo(); return; }
+    }
     if ((e.key === 'Delete' || e.key === 'Backspace') && ui.sel) { e.preventDefault(); deleteSel(); }
     if ((e.key === '+' || e.key === '-' || e.key === '=') && ui.sel && ui.sel.type === 'part' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) {
       const p = S.parts.find(q => q.id === ui.sel.id); if (p && 'RCL'.includes(p.kind)) { e.preventDefault(); stepValue(p, e.key === '-' ? -1 : 1); }
@@ -1503,6 +1586,8 @@ if (typeof module !== 'undefined') module.exports = Presets;
     for (const p of S.parts) PR.redraw(p);
     randomOffsets(S); update(); flash('Nouvelles valeurs réelles tirées dans les tolérances.');
   });
+  document.getElementById('undoBtn').addEventListener('click', undo);
+  document.getElementById('redoBtn').addEventListener('click', redo);
   const clr = document.getElementById('clear');
   clr.addEventListener('click', () => {
     if (Date.now() - ui.clearArm > 3000) { ui.clearArm = Date.now(); clr.textContent = 'Confirmer ?'; setTimeout(() => { clr.textContent = 'Tout effacer'; }, 3000); return; }
@@ -1537,7 +1622,7 @@ if (typeof module !== 'undefined') module.exports = Presets;
   window.__sim = { get S() { return S; }, get R() { return R; }, ui };
   window.SimAPI = {
     getS: () => S, getR: () => R, getDisp: () => disp,
-    setS: st => { S = st; ui.sel = null; ui.mode = 'idle'; ui.place = null; ui.ghost = null; ui.wireStart = null; ui.drag = null; update(); },
+    setS: st => { S = st; resetHistory(); ui.sel = null; ui.mode = 'idle'; ui.place = null; ui.ghost = null; ui.wireStart = null; ui.drag = null; update(); },
     stateFromPreset, freshMeters, update, flash, setExamLock,
   };
 })();
