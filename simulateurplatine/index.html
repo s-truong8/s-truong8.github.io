@@ -13,6 +13,7 @@
     --radius:10px;
   }
   * { box-sizing:border-box; }
+  [hidden] { display:none !important; }
   body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
 
   /* ---------- top bar ---------- */
@@ -149,7 +150,22 @@
   .study { color:#4F3D00; background:#FFF9E3; border:1px solid #EFE0A8; border-radius:8px; padding:8px 10px; font-variant-numeric:tabular-nums; }
 
   #unc { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:14px 18px 16px; display:grid; gap:12px; }
-  body.exam-on #unc, body.exam-on #uncBtn { display:none; }
+  body.exam-on #unc, body.exam-on #uncBtn, body.exam-on #saves, body.exam-on #savesBtn { display:none; }
+  .with-icon { display:inline-flex; align-items:center; gap:7px; }
+  .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  #saves { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:14px 18px 16px; display:grid; gap:12px; }
+  .saves-sub { font-size:12.5px; }
+  .save-form { display:flex; flex-wrap:wrap; gap:8px; }
+  .save-form input { flex:1 1 240px; min-height:38px; padding:0 12px; font:inherit; border:1px solid var(--line-strong); border-radius:8px; }
+  .save-list { list-style:none; margin:0; padding:0; display:grid; gap:6px; }
+  .save-list li { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 16px; padding:10px 12px; border:1px solid var(--line); border-radius:8px; }
+  .save-list li.fresh { border-color:var(--primary); box-shadow:0 0 0 2px rgba(35,72,201,.15); }
+  .save-list li.empty { color:var(--muted); justify-content:flex-start; border-style:dashed; }
+  .sv-meta { display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .sv-meta b { overflow-wrap:anywhere; }
+  .sv-meta small { color:var(--muted); font-size:12px; }
+  .sv-act { display:flex; flex-wrap:wrap; gap:6px; }
+  .save-io { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; font-size:12.5px; }
   .unc-top { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; }
   .unc-top h2 { margin:0; font-size:15px; letter-spacing:-.01em; }
   .tabs { display:inline-flex; border:1px solid var(--line-strong); border-radius:8px; overflow:hidden; }
@@ -253,6 +269,7 @@
       <span class="section-label">Circuit</span>
       <div class="row">
         <select id="preset" aria-label="Charger un circuit"></select>
+        <button id="savesBtn" type="button" class="with-icon" aria-expanded="false" aria-controls="saves"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h8V3M8 21v-7h8v7"/></svg>Mes circuits</button>
         <button id="reroll" type="button" title="Tirer de nouvelles valeurs réelles dans les tolérances">Nouveau tirage</button>
         <span class="hist">
           <button id="undoBtn" type="button" class="icon" title="Annuler (Ctrl+Z)" aria-label="Annuler (Ctrl+Z)" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
@@ -311,6 +328,23 @@
 <div id="bar">
   <div id="status"></div>
   <div id="info"></div>
+  <section id="saves" hidden aria-label="Mes circuits">
+    <div class="unc-top">
+      <h2>Mes circuits</h2>
+      <span class="muted saves-sub">Enregistrés dans ce navigateur</span>
+    </div>
+    <form id="save-form" class="save-form" autocomplete="off">
+      <label class="sr-only" for="save-name">Nom du circuit</label>
+      <input id="save-name" maxlength="60" placeholder="Nom du circuit">
+      <button type="submit" id="save-go" class="primary">Enregistrer le circuit actuel</button>
+    </form>
+    <ul id="save-list" class="save-list"></ul>
+    <div class="save-io">
+      <button type="button" id="save-import">Importer un fichier…</button>
+      <input type="file" id="save-file" accept=".json,application/json" hidden>
+      <span class="muted">Exportez un circuit pour en garder une copie hors du navigateur ou l’ouvrir sur un autre ordinateur.</span>
+    </div>
+  </section>
   <section id="unc" hidden aria-label="Entraînement aux incertitudes">
     <div class="unc-top">
       <h2>Incertitudes · Siglent SDM3055</h2>
@@ -349,6 +383,7 @@
       <li>16 nœuds. Les 5 douilles d’une croix (centre + 4 bras) sont reliées entre elles ; les trous gris ne conduisent pas.</li>
       <li><b>Placer :</b> choisissez la valeur dans l’inventaire, puis glissez le composant sur la platine et relâchez-le là où doit se trouver le <i>milieu</i> de la plaquette ; l’aperçu montre où il sera posé. (Un simple clic sur le composant, puis un clic sur la platine, fonctionne aussi.) Une plaquette couvre 2 trous (centre d’un nœud → bras du voisin) ; un connecteur relie deux bras voisins.</li>
       <li><b>Déplacer :</b> glissez le corps du composant. <b>Modifier :</b> cliquez un composant ; une barre apparaît au-dessus avec sa valeur (menu ou boutons − / +, ou touches − / + du clavier). <b>Supprimer :</b> glissez le composant dans la corbeille, ou sélectionnez-le (ou un fil) puis cliquez la corbeille, le bouton « Supprimer » de la barre, ou la touche Suppr.</li>
+      <li><b>Mes circuits :</b> enregistre le circuit actuel sous un nom (composants, fils, réglages des alimentations et des multimètres) dans ce navigateur. « Ouvrir » le recharge (Ctrl+Z revient au circuit précédent), « Exporter » télécharge un fichier .json, « Importer un fichier… » le rajoute à la liste, par exemple sur un autre ordinateur.</li>
       <li><b>Annuler / rétablir :</b> Ctrl+Z annule la dernière modification du circuit (composant posé, déplacé, supprimé, valeur changée, fil, circuit chargé, tout effacer) ; Ctrl+Y ou Ctrl+Maj+Z la rétablit. Les boutons ↶ ↷ de la barre Circuit font la même chose. Les réglages des appareils ne sont pas concernés.</li>
       <li><b>Fil :</b> cliquez une douille (ou une vis de plaquette) ou une borne d’appareil, puis une autre. Les fiches s’empilent. Clic droit ou Échap annule le fil en cours. Pour déplacer un bout d’un fil existant, cliquez le fil, puis glissez une des poignées orange vers une autre douille ou borne.</li>
     </ul>
@@ -1588,6 +1623,130 @@ if (typeof module !== 'undefined') module.exports = Presets;
   });
   document.getElementById('undoBtn').addEventListener('click', undo);
   document.getElementById('redoBtn').addEventListener('click', redo);
+
+  // ---------- sauvegardes nommées (navigateur + fichiers) ----------
+  const SAVES = 'platine-saves-v1';
+  const savesPanel = document.getElementById('saves'), savesBtn = document.getElementById('savesBtn');
+  const saveName = document.getElementById('save-name'), saveGo = document.getElementById('save-go'), saveList = document.getElementById('save-list');
+  let saveArm = null, delArm = null, freshId = null;
+  const readSaves = () => { try { const a = JSON.parse(localStorage.getItem(SAVES)); return Array.isArray(a) ? a : []; } catch (e) { return []; } };
+  const writeSaves = a => { try { localStorage.setItem(SAVES, JSON.stringify(a)); return true; } catch (e) { flash('Impossible d’enregistrer : le stockage du navigateur est plein ou désactivé. Exportez plutôt un fichier.'); return false; } };
+  const fmtDate = t => new Date(t).toLocaleString('fr-CA', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const plural = (n, w) => `${n} ${w}${n > 1 ? 's' : ''}`;
+  const escA = v => esc(v).replace(/"/g, '&quot;');
+
+  // Valide et nettoie un circuit venant du stockage ou d'un fichier importé (contenu non fiable).
+  function cleanState(o) {
+    const fail = m => { throw new Error(m); };
+    if (!o || typeof o !== 'object') fail('fichier vide ou illisible');
+    const ID = /^[A-Za-z0-9_-]{1,40}$/, num = v => typeof v === 'number' && isFinite(v);
+    const hole = v => Array.isArray(v) && v.length === 2 && v.every(Number.isInteger) && v[0] >= 0 && v[0] < E.ROWS && v[1] >= 0 && v[1] < E.COLS;
+    const TERMS = { alim1: '+g-', alim2: '+g-', mm1: 'ABC', mm2: 'ABC' };
+    const endpoint = k => { if (typeof k !== 'string') return false; const m = k.split(':');
+      if (m[0] === 'H' && m.length === 3) return hole([+m[1], +m[2]]) && /^\d+$/.test(m[1]) && /^\d+$/.test(m[2]);
+      return m[0] === 'T' && m.length === 3 && TERMS[m[1]] != null && m[2].length === 1 && TERMS[m[1]].includes(m[2]); };
+    if (!Array.isArray(o.parts) || !Array.isArray(o.wires)) fail('il manque la liste des composants ou des fils');
+    if (o.parts.length > 300 || o.wires.length > 600) fail('circuit trop grand');
+    const parts = o.parts.map(p => {
+      if (!p || !ID.test(p.id) || !'RCLSK'.includes(p.kind) || p.kind.length !== 1 || !hole(p.a) || !hole(p.b)) fail('composant invalide');
+      const q = { id: p.id, kind: p.kind, a: [p.a[0], p.a[1]], b: [p.b[0], p.b[1]], nominal: num(p.nominal) && p.nominal >= 0 ? p.nominal : 0, tol: num(p.tol) ? p.tol : (PR.TOL[p.kind] || 0) };
+      if (p.kind === 'L') q.inom = num(p.inom) && p.inom > 0 ? p.inom : 0.1;
+      if (p.kind === 'K') q.closed = p.closed === true;
+      if (p.burned === true) q.burned = true;
+      if (num(p.trueValue) && p.trueValue > 0) q.trueValue = p.trueValue; else PR.redraw(q);
+      return q;
+    });
+    const wires = o.wires.map(w => {
+      if (!w || !ID.test(w.id) || !endpoint(w.from) || !endpoint(w.to)) fail('fil invalide');
+      return { id: w.id, from: w.from, to: w.to, color: WIRE_COL[w.color] ? w.color : 'yellow' };
+    });
+    const alims = {};
+    for (const a of ['alim1', 'alim2']) {
+      const src = (o.alims && o.alims[a]) || {}, d = PR.baseAlim();
+      for (const k of Object.keys(d)) if (typeof src[k] === typeof d[k] && (typeof d[k] !== 'number' || isFinite(src[k]))) d[k] = src[k];
+      d.vset = Math.max(0, Math.min(30, d.vset)); d.ilim = Math.max(0, Math.min(3, d.ilim)); d.offset = Math.max(-0.01, Math.min(0.01, d.offset));
+      alims[a] = d;
+    }
+    const meters = {};
+    for (const m of ['mm1', 'mm2']) {
+      const src = (o.meters && o.meters[m]) || {}, d = PR.baseMeter(m === 'mm1');
+      for (const k of ['on', 'auto', 'shift']) if (typeof src[k] === 'boolean') d[k] = src[k];
+      if (E.RANGES[src.mode]) d.mode = src.mode;
+      if (Number.isInteger(src.range)) d.range = Math.max(0, Math.min(E.RANGES[d.mode].length - 1, src.range));
+      meters[m] = d;
+    }
+    const preset = typeof o.preset === 'string' && PR.LIST[o.preset] ? o.preset : null;
+    return { parts, wires, alims, meters, preset };
+  }
+
+  function renderSaves() {
+    const list = readSaves().sort((a, b) => b.savedAt - a.savedAt);
+    if (!list.length) { saveList.innerHTML = '<li class="empty">Aucun circuit enregistré pour l’instant.</li>'; return; }
+    saveList.innerHTML = list.map(v => {
+      const st = v.state || {}, np = (st.parts || []).length, nw = (st.wires || []).length;
+      return `<li class="${v.id === freshId ? 'fresh' : ''}"><div class="sv-meta"><b>${esc(v.name)}</b><small>${fmtDate(v.savedAt)} · ${plural(np, 'composant')} · ${plural(nw, 'fil')}</small></div>
+        <div class="sv-act"><button type="button" data-sv="load" data-id="${escA(v.id)}">Ouvrir</button><button type="button" data-sv="export" data-id="${escA(v.id)}">Exporter</button><button type="button" class="danger" data-sv="del" data-id="${escA(v.id)}">${delArm && delArm.id === v.id ? 'Confirmer ?' : 'Supprimer'}</button></div></li>`;
+    }).join('');
+  }
+  function suggestName() {
+    const base = S.preset && PR.LIST[S.preset] ? PR.LIST[S.preset].label : 'Mon circuit';
+    return `${base} · ${new Date().toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' })}`;
+  }
+  function resetSaveBtn() { saveArm = null; saveGo.textContent = 'Enregistrer le circuit actuel'; }
+
+  savesBtn.addEventListener('click', () => {
+    savesPanel.hidden = !savesPanel.hidden; savesBtn.setAttribute('aria-expanded', String(!savesPanel.hidden));
+    if (!savesPanel.hidden) { if (!saveName.value) saveName.value = suggestName(); renderSaves(); savesPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); saveName.focus(); saveName.select(); }
+  });
+  saveName.addEventListener('input', resetSaveBtn);
+  document.getElementById('save-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = saveName.value.trim().slice(0, 60);
+    if (!name) { saveName.focus(); return flash('Donnez un nom au circuit.'); }
+    const list = readSaves(), same = list.find(v => v.name.toLowerCase() === name.toLowerCase());
+    if (same && saveArm !== same.id) { saveArm = same.id; saveGo.textContent = `Remplacer « ${name} » ?`; setTimeout(() => { if (saveArm === same.id) resetSaveBtn(); }, 4000); return; }
+    const state = JSON.parse(JSON.stringify({ parts: S.parts, wires: S.wires, alims: S.alims, meters: S.meters, preset: S.preset || null }));
+    const entry = { id: same ? same.id : 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name, savedAt: Date.now(), state };
+    if (!writeSaves(same ? list.map(v => v.id === same.id ? entry : v) : [...list, entry])) return;
+    resetSaveBtn(); freshId = entry.id; renderSaves();
+    flash(same ? `Circuit « ${name} » remplacé.` : `Circuit « ${name} » enregistré.`);
+  });
+  function openState(state, name) {
+    let clean; try { clean = cleanState(state); } catch (err) { return flash(`Impossible d’ouvrir « ${name} » : ${err.message}.`); }
+    cancel(); S = clean; ui.sel = null; update();
+    flash(`Circuit « ${name} » ouvert. Ctrl+Z pour revenir au circuit précédent.`);
+  }
+  function download(name, entry) {
+    const blob = new Blob([JSON.stringify({ format: 'platine-circuit', version: 1, name: entry.name, savedAt: entry.savedAt, state: entry.state }, null, 1)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = (name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50) || 'circuit') + '.json';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+  saveList.addEventListener('click', e => {
+    const b = e.target.closest('button[data-sv]'); if (!b) return;
+    const list = readSaves(), v = list.find(x => x.id === b.dataset.id); if (!v) return renderSaves();
+    if (b.dataset.sv === 'load') openState(v.state, v.name);
+    if (b.dataset.sv === 'export') { download(v.name, v); flash(`« ${v.name} » exporté.`); }
+    if (b.dataset.sv === 'del') {
+      if (!delArm || delArm.id !== v.id) { delArm = { id: v.id }; renderSaves(); setTimeout(() => { if (delArm && delArm.id === v.id) { delArm = null; renderSaves(); } }, 3000); return; }
+      delArm = null; writeSaves(list.filter(x => x.id !== v.id)); renderSaves(); flash(`« ${v.name} » supprimé.`);
+    }
+  });
+  const fileIn = document.getElementById('save-file');
+  document.getElementById('save-import').addEventListener('click', () => fileIn.click());
+  fileIn.addEventListener('change', () => {
+    const file = fileIn.files[0]; fileIn.value = ''; if (!file) return;
+    if (file.size > 1e6) return flash('Fichier trop gros pour un circuit (1 Mo maximum).');
+    file.text().then(txt => {
+      let o; try { o = JSON.parse(txt); } catch (err) { return flash('Ce fichier n’est pas un circuit valide (JSON illisible).'); }
+      const rawState = o && o.format === 'platine-circuit' ? o.state : o;
+      let state; try { state = cleanState(rawState); } catch (err) { return flash(`Ce fichier n’est pas un circuit valide : ${err.message}.`); }
+      const name = (typeof o.name === 'string' && o.name.trim() ? o.name.trim() : file.name.replace(/\.json$/i, '')).slice(0, 60);
+      const entry = { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name, savedAt: Date.now(), state };
+      if (!writeSaves([...readSaves(), entry])) return;
+      freshId = entry.id; renderSaves(); flash(`« ${name} » importé. Cliquez « Ouvrir » pour le charger.`);
+    });
+  });
   const clr = document.getElementById('clear');
   clr.addEventListener('click', () => {
     if (Date.now() - ui.clearArm > 3000) { ui.clearArm = Date.now(); clr.textContent = 'Confirmer ?'; setTimeout(() => { clr.textContent = 'Tout effacer'; }, 3000); return; }
