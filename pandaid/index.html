@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pandaid CPR</title>
+  <meta name="description" content="A CPR training game: make the right calls, then do chest compressions on a cushion while your webcam coaches you.">
+  <link rel="icon" type="image/png" href="assets/mascot-stickers/02-excited.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<!-- data-screen is updated by showScreen() in main.js. style.css uses it
+     to show the right top bar and fill the progress bar. -->
+<body data-screen="home">
+
+  <!-- ============================================================
+       ICONS: defined once here, reused with <svg><use href="#..."/></svg>
+       ============================================================ -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+    <symbol id="i-steps" viewBox="0 0 24 24"><path d="M5 6l2 2 3-3M5 12l2 2 3-3M5 18l2 2 3-3M13 7h7M13 13h7M13 19h7"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 5a2 2 0 0 1 2-2z"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-8-4.6-8-10.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8 2.5C20 15.4 12 20 12 20z"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8M10 17h4v3h-4z"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 7v6M12 17v.5"/></symbol>
+    <symbol id="i-hands" viewBox="0 0 24 24"><path d="M7 14V8a1.5 1.5 0 0 1 3 0v4M10 11V6.5a1.5 1.5 0 0 1 3 0V11M13 11V7.5a1.5 1.5 0 0 1 3 0V12M16 12v-1.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-2.7L4.3 14.6a1.5 1.5 0 0 1 2.5-1.6L7 14"/></symbol>
+    <symbol id="i-arm" viewBox="0 0 24 24"><path d="M12 3v18M7 21h10M9 7l3-4 3 4"/></symbol>
+    <symbol id="i-beat" viewBox="0 0 24 24"><path d="M2 12h4l2-5 4 10 2-5h8"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  </svg>
+
+  <!-- Top bar during the game: quit button + progress bar (hidden on the home page) -->
+  <div id="lesson-bar">
+    <button id="quit-button" class="icon-button" aria-label="Quit and go back to the home page">
+      <svg class="icon"><use href="#i-close"/></svg>
+    </button>
+    <div class="progress" role="presentation"><div class="progress-fill"></div></div>
+  </div>
+
+  <!-- Sound on / off (main.js): mutes the sound effects and the panda's voice -->
+  <button id="mute-button" class="icon-button" type="button" aria-label="Sound is on. Turn it off">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/>
+      <path class="mute-waves" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/>
+      <path class="mute-slash" d="M16 9l6 6M22 9l-6 6"/>
+    </svg>
+  </button>
+
+  <main>
+
+    <!-- ============================================================
+         THE GAME SCENE: fills the whole screen during the emergency
+         (scene, decisions, tutorial, compressions, ambulance).
+         main.js adds the class "game-mode" to <body> on those screens.
+         Classes added on #victim-scene change the drawing:
+         - "after-call" (scenario.js): the phone with 911 appears
+         - "press" (camera.js): the chest goes down for one compression
+         ============================================================ -->
+    <div id="victim-scene">
+      <!-- viewBox starts at y=130: the scene is shifted up, so the man stays above the dialogue box.
+           "meet": the whole scene always fits, on any screen shape (the empty space
+           around it gets the sky and sidewalk colors from style.css). -->
+      <svg class="victim" viewBox="0 130 1600 900" preserveAspectRatio="xMidYMin meet"
+           role="img" aria-label="A street. A man lies unconscious on the sidewalk.">
+        <!-- .victim-world: the whole drawing. style.css zooms it on the chest during
+             the tutorial and the compressions (like a camera zoom). -->
+        <g class="victim-world">
+        <!-- background: sky and buildings -->
+        <rect x="0" y="0" width="1600" height="1100" fill="#ECEBE6"/>
+        <g fill="#DEDCD5">
+          <rect x="40" y="180" width="200" height="390"/>
+          <rect x="260" y="260" width="150" height="310"/>
+          <rect x="430" y="140" width="230" height="430"/>
+          <rect x="940" y="200" width="210" height="370"/>
+          <rect x="1170" y="120" width="170" height="450"/>
+          <rect x="1360" y="240" width="220" height="330"/>
+        </g>
+        <g fill="#ECEBE6">
+          <rect x="80" y="220" width="40" height="50"/><rect x="160" y="220" width="40" height="50"/>
+          <rect x="80" y="310" width="40" height="50"/><rect x="160" y="310" width="40" height="50"/>
+          <rect x="470" y="180" width="50" height="60"/><rect x="570" y="180" width="50" height="60"/>
+          <rect x="470" y="290" width="50" height="60"/><rect x="570" y="290" width="50" height="60"/>
+          <rect x="980" y="240" width="50" height="60"/><rect x="1060" y="240" width="50" height="60"/>
+          <rect x="1210" y="160" width="40" height="50"/><rect x="1270" y="160" width="40" height="50"/>
+          <rect x="1210" y="250" width="40" height="50"/><rect x="1270" y="250" width="40" height="50"/>
+          <rect x="1400" y="280" width="50" height="60"/><rect x="1490" y="280" width="50" height="60"/>
+        </g>
+        <!-- sidewalk -->
+        <rect x="0" y="564" width="1600" height="536" fill="#D6D3CA"/>
+        <rect x="0" y="560" width="1600" height="8" fill="#141414"/>
+
+        <!-- the ambulance, on the ambulance screen only (drives in from the right).
+             Drawn before the man, so it is behind him, on the street. -->
+        <g id="scene-ambulance" transform="translate(1100 276) scale(2.4)">
+          <g class="ambulance-body">
+            <ellipse class="amb-shadow" cx="101" cy="111" rx="86" ry="6" fill="#141414" opacity="0.18"/>
+            <!-- mirrored so the cab faces left, the way it drives -->
+            <g class="amb-bounce"><g transform="translate(202 0) scale(-1 1)">
+              <circle class="siren-glow" cx="71" cy="35" r="16"/>
+              <rect class="siren" x="60" y="30" width="22" height="10" rx="3"/>
+              <rect x="20" y="40" width="112" height="56" rx="8" fill="#ffffff" stroke="#141414" stroke-width="2"/>
+              <path d="M130 52h30l22 22v22h-52z" fill="#ffffff" stroke="#141414" stroke-width="2"/>
+              <path d="M140 58h18l16 16h-34z" fill="#7cc4ff"/>
+              <rect x="20" y="80" width="162" height="7" fill="#D7261E"/>
+              <rect x="65" y="46" width="10" height="28" rx="2" fill="#D7261E"/>
+              <rect x="56" y="55" width="28" height="10" rx="2" fill="#D7261E"/>
+              <rect class="headlight" x="176" y="84" width="6" height="6" rx="2" fill="#ffe27a"/>
+            </g></g>
+            <g class="wheel"><circle cx="152" cy="98" r="12" fill="#3b2416"/><circle cx="152" cy="98" r="5" fill="#a8968a"/><rect x="151" y="88" width="2" height="20" fill="#a8968a"/></g>
+            <g class="wheel"><circle cx="48" cy="98" r="12" fill="#3b2416"/><circle cx="48" cy="98" r="5" fill="#a8968a"/><rect x="47" y="88" width="2" height="20" fill="#a8968a"/></g>
+          </g>
+        </g>
+        <!-- the man, lying on his back, head on the left (drawn at 2.4x, centered) -->
+        <!-- .victim-person: style.css slides him left during compressions, to make room for the camera -->
+        <g class="victim-person">
+        <g transform="translate(320 276) scale(2.4)">
+          <g class="victim-legs">
+            <rect x="196" y="94" width="116" height="24" rx="12" fill="#3b4a5a"/>
+            <rect x="306" y="84" width="16" height="36" rx="7" fill="#2a2a2a"/>
+          </g>
+          <g class="victim-chest">
+            <rect x="86" y="88" width="118" height="30" rx="14" fill="#4f7fd9"/>
+            <rect x="98" y="108" width="82" height="10" rx="5" fill="#3f68b8"/>
+            <circle cx="182" cy="113" r="6" fill="#e9b88f"/>
+            <!-- where to put the hands: a pulsing ring and a label.
+                 Only visible on the tutorial and compressions screens (style.css) -->
+            <g id="victim-target">
+              <circle class="target-ring" cx="139" cy="86" r="24" fill="none" stroke="#f47b20" stroke-width="3" stroke-dasharray="7 5"/>
+              <!-- under the chest, on the sidewalk: the camera window hides the right side -->
+              <text x="139" y="131" font-size="9" font-weight="900" fill="#c25a0c" text-anchor="middle">Hands here</text>
+            </g>
+            <!-- the player's hands, only during compressions -->
+            <g id="victim-hands">
+              <rect x="122" y="-60" width="16" height="140" rx="6" fill="#8a6f5c"/>
+              <rect x="140" y="-60" width="16" height="140" rx="6" fill="#a08573"/>
+              <ellipse cx="139" cy="84" rx="20" ry="8" fill="#e9b88f"/>
+            </g>
+          </g>
+          <rect x="80" y="98" width="12" height="12" fill="#e9b88f"/>
+          <circle cx="66" cy="100" r="18" fill="#f1c7a3"/>
+          <!-- hair: follows the top of the head (circle at 66,100, radius 18), from the
+               back of the head to above the forehead; the hairline stays above the eye -->
+          <path d="M48.3 103.1 A18 18 0 0 1 79.8 88.4 Q66 92 50.5 104.5 Z" fill="#5a3a24"/>
+          <path d="M54 90 Q60 83 70 84" fill="none" stroke="#7a5236" stroke-width="2" stroke-linecap="round"/>
+          <path d="M60 101 q4 3 8 0" fill="none" stroke="#3b2416" stroke-width="2" stroke-linecap="round"/>
+
+          <!-- the alert sign, until help arrives -->
+          <g id="victim-alert">
+            <circle cx="66" cy="50" r="16" fill="#D7261E"/>
+            <rect x="63.5" y="40" width="5" height="13" rx="2" fill="#ffffff"/>
+            <circle cx="66" cy="59" r="3" fill="#ffffff"/>
+          </g>
+
+          <!-- the phone on speaker, after the call step -->
+          <g id="victim-phone">
+            <rect x="14" y="88" width="22" height="32" rx="4" fill="#2a2a2a"/>
+            <rect x="17" y="92" width="16" height="22" rx="2" fill="#3fb867"/>
+            <text x="25" y="107" font-size="8" font-weight="900" fill="#ffffff" text-anchor="middle">911</text>
+          </g>
+        </g>
+        </g>
+              </g>
+      </svg>
+    </div>
+
+    <!-- THE ZOOM CIRCLE: a close-up of the chest, seen from above (head on the left,
+         like the man in the scene; the player kneels at his side, at the bottom).
+         Visible on the tutorial and compressions screens only (style.css).
+         - tutorial: a looping animation, step by step (find the center, one hand,
+           the other hand on top, interlace the fingers, push). Captions = .lens-step
+         - compressions: the final position, and the hands dip at each compression
+         It must stay right after #victim-scene: the hands dip with the chest
+         through the CSS rule "#victim-scene.press + #hands-lens". -->
+    <div id="hands-lens" aria-label="Close-up: how to place your hands on the chest">
+      <p class="lens-tag">Zoom</p>
+      <div class="lens-circle">
+        <svg viewBox="-100 -100 200 200" aria-hidden="true">
+          <!-- the shirt, from above -->
+          <rect x="-100" y="-100" width="200" height="200" fill="#4f7fd9"/>
+          <!-- the neck and collar, on the left (head side) -->
+          <path d="M-100 -34 Q-74 0 -100 34 Z" fill="#f1c7a3"/>
+          <path d="M-100 -40 Q-68 0 -100 40" fill="none" stroke="#3f68b8" stroke-width="4"/>
+          <!-- ribs, faint -->
+          <g fill="none" stroke="#5b8be0" stroke-width="3" stroke-linecap="round">
+            <path d="M-50 -10 Q-40 -70 -10 -88"/><path d="M-50 10 Q-40 70 -10 88"/>
+            <path d="M-20 -10 Q-10 -70 20 -90"/><path d="M-20 10 Q-10 70 20 90"/>
+            <path d="M10 -10 Q22 -64 48 -84"/><path d="M10 10 Q22 64 48 84"/>
+          </g>
+          <!-- landmarks: the breastbone (sternum) and the nipple line -->
+          <line x1="-74" y1="0" x2="34" y2="0" stroke="#24467f" stroke-width="5" stroke-dasharray="1 9" stroke-linecap="round"/>
+          <line class="lens-nipple-line" x1="0" y1="-92" x2="0" y2="92" stroke="#ffffff" stroke-width="2" stroke-dasharray="5 5"/>
+          <circle cx="0" cy="-46" r="4" fill="#24467f"/>
+          <circle cx="0" cy="46" r="4" fill="#24467f"/>
+          <g class="lens-labels" font-family="sans-serif" font-size="9" font-weight="800" fill="#ffffff">
+            <text x="-86" y="-8">breastbone</text>
+            <text x="6" y="-60">nipple line</text>
+          </g>
+          <!-- the target: center of the chest, on the breastbone, between the nipples -->
+          <circle class="lens-ring" cx="0" cy="0" r="26" fill="none" stroke="#D7261E" stroke-width="4" stroke-dasharray="8 6"/>
+          <circle class="lens-target" cx="0" cy="0" r="6" fill="#D7261E" stroke="#ffffff" stroke-width="2"/>
+
+          <!-- the player's hands, coming from the bottom, fingers pointing across the chest -->
+          <g class="lens-hands">
+            <g class="lens-push">
+              <!-- 1st hand, flat on the chest -->
+              <g class="hand-bottom">
+                <!-- arm (skin at the wrist, then the sleeve), going down to the player -->
+                <path d="M-17 2 L17 2 L6 46 L-30 46 Z" fill="#e9b88f" stroke="#c99a76" stroke-width="1.5"/>
+                <path d="M-27 36 L9 36 L-6 120 L-56 120 Z" fill="#8a6f5c"/>
+                <!-- thumb -->
+                <rect x="-36" y="-40" width="11" height="30" rx="5.5" transform="rotate(-28 -30 -12)" fill="#e9b88f" stroke="#c99a76" stroke-width="1.5"/>
+                <!-- palm: the heel of the hand is its bottom part, on the target -->
+                <rect x="-22" y="-50" width="44" height="58" rx="15" fill="#e9b88f" stroke="#c99a76" stroke-width="1.5"/>
+                <g class="bottom-fingers">
+                  <rect x="-19.5" y="-84" width="9" height="40" rx="4.5" fill="#e9b88f" stroke="#c99a76" stroke-width="1.5"/>
+                  <rect x="-9.5" y="-90" width="9" height="46" rx="4.5" fill="#e9b88f" stroke="#c99a76" stroke-width="1.5"/>
+                  <rect x="0.5" y="-86" width="9" height="42" rx="4.5" fill="#e9b88f" stroke="#c99a76" stroke-width="1.5"/>
+                  <rect x="10.5" y="-76" width="9" height="32" rx="4.5" fill="#e9b88f" stroke="#c99a76" stroke-width="1.5"/>
+                </g>
+              </g>
+              <!-- 2nd hand, on top of the first one (mirrored: the thumb is on the other side) -->
+              <g class="hand-top">
+                <g transform="translate(0 -3) scale(-1 1)">
+                <!-- arm (skin at the wrist, then the sleeve), going down to the player -->
+                <path d="M-17 2 L17 2 L6 46 L-30 46 Z" fill="#f6d6b8" stroke="#c99a76" stroke-width="1.5"/>
+                <path d="M-27 36 L9 36 L-6 120 L-56 120 Z" fill="#a08573"/>
+                <!-- thumb -->
+                <rect x="-36" y="-40" width="11" height="30" rx="5.5" transform="rotate(-28 -30 -12)" fill="#f6d6b8" stroke="#c99a76" stroke-width="1.5"/>
+                <!-- palm: the heel of the hand is its bottom part, on the target -->
+                <rect x="-22" y="-50" width="44" height="58" rx="15" fill="#f6d6b8" stroke="#c99a76" stroke-width="1.5"/>
+                <g class="top-fingers">
+                  <rect x="-19.5" y="-84" width="9" height="40" rx="4.5" fill="#f6d6b8" stroke="#c99a76" stroke-width="1.5"/>
+                  <rect x="-9.5" y="-90" width="9" height="46" rx="4.5" fill="#f6d6b8" stroke="#c99a76" stroke-width="1.5"/>
+                  <rect x="0.5" y="-86" width="9" height="42" rx="4.5" fill="#f6d6b8" stroke="#c99a76" stroke-width="1.5"/>
+                  <rect x="10.5" y="-76" width="9" height="32" rx="4.5" fill="#f6d6b8" stroke="#c99a76" stroke-width="1.5"/>
+                </g>
+                </g>
+              </g>
+              <!-- the heel of the hand: where the push goes -->
+              <circle class="lens-heel" cx="0" cy="0" r="6" fill="#D7261E" stroke="#ffffff" stroke-width="2"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <p class="lens-caption">
+        <span class="lens-step" style="--i: 0">1. Center of the chest, on the breastbone</span>
+        <span class="lens-step" style="--i: 1">2. Heel of one hand on the center</span>
+        <span class="lens-step" style="--i: 2">3. Other hand on top</span>
+        <span class="lens-step" style="--i: 3">4. Interlace your fingers, lift them off the ribs</span>
+        <span class="lens-step" style="--i: 4">5. Arms straight, push at least 5 cm</span>
+        <span class="lens-final">Heel on the center, fingers interlaced</span>
+      </p>
+    </div>
+
+    <!-- The webcam image with the skeleton drawn on top. -->
+    <!-- camera.js shows it only on the setup and compressions screens.
+         During compressions it is a small window in the corner of the scene. -->
+    <div id="camera-box">
+      <p class="camera-placeholder"><svg class="icon"><use href="#i-camera"/></svg>Camera off</p>
+      <video id="camera-video" autoplay playsinline muted></video>
+      <canvas id="camera-canvas"></canvas>
+      <p class="camera-safety">Firm cushion only. Never on a real person.</p>
+    </div>
+
+    <!-- THE PANDA COACH, standing in the scene behind the dialogue box.
+         panda.js copies the face of the active screen and moves him on top of the box. -->
+    <img id="scene-panda" src="assets/mascot-stickers/06-shocked.png" alt="">
+
+    <!-- Pop-up: where the advice comes from (opens with the link #sources, from the home
+         page and the results screen). It is outside the screens so it works from anywhere. -->
+    <div class="modal" id="sources">
+      <a class="modal-backdrop" href="#" aria-label="Close"></a>
+      <div class="modal-card" role="dialog" aria-labelledby="sources-title">
+        <p class="card-bar">Sources: Canada</p>
+        <div class="modal-body">
+          <h2 id="sources-title">Where this comes from</h2>
+          <p class="muted sources-intro">The advice in the game follows Canadian first-aid guidance (checked in November 2026):</p>
+          <ul class="sources-facts">
+            <li><strong>Phone 9-1-1</strong> and get an AED (or shout for one). Put the phone on speaker if you are alone. <span class="src">[1] [2]</span></li>
+            <li><strong>Push hard and fast in the centre of the chest</strong>, with two hands for an adult. <span class="src">[1] [2]</span></li>
+            <li><strong>100 to 120 compressions per minute</strong>: the beat you follow on the compressions screen. <span class="src">[1] [2]</span></li>
+            <li><strong>At least 5 cm deep</strong> for an adult, letting the chest come back up between pushes. <span class="src">[2]</span></li>
+            <li><strong>Hands-only CPR</strong> (no breaths) is acceptable for an adult; dispatchers now coach adults this way. <span class="src">[2] [3]</span></li>
+            <li><strong>Don't stop</strong> until help takes over, an AED is found, or the person responds. <span class="src">[1] [2]</span></li>
+          </ul>
+          <ol class="sources-list">
+            <li><a href="https://www.heartandstroke.ca/-/media/pdf-files/cpr/hands-only-cpr-poster-en.pdf" target="_blank" rel="noopener noreferrer">Heart &amp; Stroke Foundation of Canada: Hands-Only CPR, three steps you can handle</a> (poster, 2023)</li>
+            <li><a href="https://cdn.redcross.ca/prodmedia/crc/azure/documents/first-aid-program-2025/fa_cpr_learner_guide_en.pdf" target="_blank" rel="noopener noreferrer">Canadian Red Cross: First Aid &amp; CPR learner guide</a> (2025)</li>
+            <li><a href="https://cpr.heartandstroke.ca/resource/GuidelinesHighlightsEN2025" target="_blank" rel="noopener noreferrer">Heart &amp; Stroke: Highlights of the 2025 AHA Guidelines for CPR and ECC, Canadian edition</a></li>
+          </ol>
+          <p class="muted"><a href="https://www.heartandstroke.ca/how-you-can-help/learn-cpr" target="_blank" rel="noopener noreferrer">Learn CPR &amp; AEDs with Heart &amp; Stroke</a>. Guidelines change: always check the latest edition. This game is a training aid and does not replace a certified first-aid course. It is not affiliated with or endorsed by these organizations.</p>
+          <a class="btn btn-small modal-close" href="#">Close</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================== HOME: the title screen ============================== -->
+    <section id="screen-home" class="screen active">
+
+      <div class="title-screen">
+        <!-- The city behind the logo -->
+        <svg class="title-city" viewBox="0 0 1600 400" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+          <g fill="#dedcd5">
+            <rect x="40" y="120" width="200" height="280"/><rect x="260" y="200" width="150" height="200"/>
+            <rect x="430" y="80" width="230" height="320"/><rect x="700" y="180" width="170" height="220"/>
+            <rect x="940" y="110" width="210" height="290"/><rect x="1170" y="40" width="170" height="360"/>
+            <rect x="1360" y="160" width="220" height="240"/>
+          </g>
+          <g fill="#ecebe6">
+            <rect x="80" y="160" width="40" height="50"/><rect x="160" y="160" width="40" height="50"/>
+            <rect x="80" y="250" width="40" height="50"/><rect x="160" y="250" width="40" height="50"/>
+            <rect x="470" y="120" width="50" height="60"/><rect x="570" y="120" width="50" height="60"/>
+            <rect x="470" y="230" width="50" height="60"/><rect x="570" y="230" width="50" height="60"/>
+            <rect x="980" y="150" width="50" height="60"/><rect x="1060" y="150" width="50" height="60"/>
+            <rect x="1210" y="80" width="40" height="50"/><rect x="1270" y="80" width="40" height="50"/>
+            <rect x="1400" y="200" width="50" height="60"/><rect x="1490" y="200" width="50" height="60"/>
+          </g>
+        </svg>
+
+        <p class="title-warning"><span class="safety-dot"></span>Training aid: firm cushion only, never a real person</p>
+
+        <div class="title-main">
+          <p class="title-kicker">A CPR training game</p>
+          <h1 class="title-logo"><span class="logo-word">Pandaid</span> <span class="logo-cpr">CPR</span></h1>
+          <p class="title-sub">Someone collapses. You have two minutes.</p>
+
+          <button class="btn btn-orange btn-play start-button">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="currentColor"/></svg>
+            Play
+          </button>
+
+          <div class="title-menu">
+            <a class="menu-btn" href="#how">How to play</a>
+            <a class="menu-btn" href="#safety">Safety</a>
+            <a class="menu-btn" href="#sources">Sources</a>
+          </div>
+        </div>
+
+        <img class="title-mascot" src="assets/mascot-stickers/02-excited.png" alt="Pandaid, a red panda in a doctor's coat, waving">
+
+        <!-- The route of the mission: the 4 stages, like levels -->
+        <ol class="route" aria-label="The four stages of the mission">
+          <li class="route-stop route-now"><span class="route-num">1</span>Camera check</li>
+          <li class="route-stop"><span class="route-num">2</span>Calls</li>
+          <li class="route-stop"><span class="route-num">3</span>Compressions</li>
+          <li class="route-stop"><span class="route-num">4</span>Grade</li>
+        </ol>
+      </div>
+
+      <!-- Pop-up: how to play (opens with the link #how) -->
+      <div class="modal" id="how">
+        <a class="modal-backdrop" href="#" aria-label="Close"></a>
+        <div class="modal-card" role="dialog" aria-labelledby="how-title">
+          <p class="card-bar">Briefing</p>
+          <div class="modal-body">
+            <h2 id="how-title">How to play</h2>
+            <ol class="stages">
+              <li class="stage"><span class="stage-num">01</span><h3>Camera check</h3><p>Kneel next to a cushion, webcam at your side. We check it can see your arms.</p></li>
+              <li class="stage"><span class="stage-num">02</span><h3>The right calls</h3><p>Is it safe? Does he respond? Is he breathing? Who do you call? Answer before the clock runs out.</p></li>
+              <li class="stage stage-hot"><span class="stage-num">03</span><h3>Chest compressions</h3><p>Push on the cushion. The webcam reads your rhythm, depth and arms, and coaches you live.</p></li>
+              <li class="stage"><span class="stage-num">04</span><h3>Your grade</h3><p>The ambulance takes over. You get a score and one tip for next time.</p></li>
+            </ol>
+            <p class="modal-need"><strong>You need:</strong> a firm cushion, a webcam that sees you from the side, space to kneel, sound on, and two minutes.</p>
+            <a class="btn btn-small modal-close" href="#">Got it</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pop-up: safety (opens with the link #safety) -->
+      <div class="modal" id="safety">
+        <a class="modal-backdrop" href="#" aria-label="Close"></a>
+        <div class="modal-card modal-warning" role="dialog" aria-labelledby="safety-title">
+          <p class="card-bar">Safety first</p>
+          <div class="modal-body">
+            <h2 id="safety-title">Cushion only.</h2>
+            <p class="warning-main">Practice on a firm cushion only. Never practice on a real person.</p>
+            <p class="muted">This game is a training aid. It does not replace a certified first-aid course.</p>
+            <a class="btn btn-small modal-close" href="#">I understand</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== SETUP: camera check ============================== -->
+    <section id="screen-setup" class="screen lesson">
+      <div class="coach">
+        <img class="sticker" src="assets/mascot-stickers/05-cool.png" alt="">
+        <div class="bubble">
+          <p class="bubble-name">Camera check</p>
+          <p id="setup-status">Put the camera to your side, so it sees you and the cushion. Then turn it on.</p>
+        </div>
+      </div>
+
+      <div class="setup-actions">
+        <button id="camera-button" class="btn btn-blue">Turn on the camera</button>
+        <p id="setup-arm"></p>
+        <p class="count-chip">Test compressions counted <strong id="setup-count">0</strong></p>
+        <p class="big-number"><span id="setup-rate">–</span> <small>/min</small></p>
+        <p id="setup-depth"></p>
+      </div>
+
+      <!-- For the team only: to see and tune what the tracker sees.
+           Hidden for players: open index.html?debug to show it (main.js adds body.debug) -->
+      <details id="debug-panel">
+        <summary>Debug: arm height (last 5 s)</summary>
+        <canvas id="debug-canvas" width="600" height="140"></canvas>
+        <p id="debug-info"></p>
+        <label class="slider-row">
+          Min. movement
+          <input type="range" id="debug-slider" min="0.02" max="0.3" step="0.01" value="0.07">
+          <span id="debug-slider-value">0.07</span>
+        </label>
+        <label class="slider-row">
+          Good depth
+          <input type="range" id="depth-slider" min="0.05" max="0.5" step="0.01" value="0.15">
+          <span id="depth-slider-value">0.15</span>
+        </label>
+      </details>
+
+      <footer class="lesson-footer">
+        <div class="lesson-footer-inner">
+          <!-- camera.js enables this button once the camera works -->
+          <button id="setup-continue" class="next-button btn" data-next="scene" disabled>Continue</button>
+        </div>
+      </footer>
+    </section>
+
+    <!-- ============================================================
+         GAME SCREENS: each one is a dialogue box at the bottom of the scene.
+         .dialogue = portrait (sticker) + name + text + actions.
+         ============================================================ -->
+
+    <!-- ============================== SCENE: the collapse ============================== -->
+    <section id="screen-scene" class="screen game-screen">
+      <div class="dialogue dialogue-alert">
+        <img class="dialogue-portrait" src="assets/mascot-stickers/06-shocked.png" alt="">
+        <div class="dialogue-body">
+          <p class="dialogue-name">Emergency!</p>
+          <p class="dialogue-text">A man collapses in front of you. He doesn't move. Before you can do CPR, you must take the right steps, fast. I'll be right here with you.</p>
+          <div class="dialogue-actions">
+            <button class="next-button btn btn-red" data-next="decisions">Help him</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== DECISIONS: the steps before CPR ============================== -->
+    <!-- scenario.js builds the step map and the choices, and fills the rest. -->
+    <section id="screen-decisions" class="screen game-screen">
+      <ol id="step-map" class="step-map"></ol>
+
+      <div id="step-bubble" class="dialogue">
+        <img id="step-mascot" class="dialogue-portrait" src="assets/mascot-stickers/04-confused.png" alt="">
+        <div class="dialogue-body">
+          <p class="dialogue-name"><span id="step-speaker"></span> <span id="step-title" class="dialogue-step"></span></p>
+          <p id="dispatcher-line" class="dialogue-text"></p>
+          <div class="timer"><div id="decision-timer" class="timer-fill"></div></div>
+          <div id="choices" class="choices"></div>
+          <p id="decision-feedback"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== TUTORIAL: how to push ============================== -->
+    <!-- The 3 tips follow the sources in the #sources pop-up (centre of the chest, at least 5 cm, 100 to 120 per minute). -->
+    <section id="screen-tutorial" class="screen game-screen">
+      <div class="dialogue bubble-blue">
+        <img class="dialogue-portrait" src="assets/mascot-stickers/01-happy.png" alt="">
+        <div class="dialogue-body">
+          <p class="dialogue-name">Dispatcher</p>
+          <p class="dialogue-text">Help is on the way. Start chest compressions now, and don't stop until the paramedics take over. Remember:</p>
+          <ul class="tip-chips">
+            <li><svg class="icon"><use href="#i-hands"/></svg>Center of the chest, push hard: at least 5 cm</li>
+            <li><svg class="icon"><use href="#i-arm"/></svg>Straight arms, use your whole body</li>
+            <li><svg class="icon"><use href="#i-beat"/></svg>Follow the beat: one push on every tock (or flash of the red dot), don't stop</li>
+          </ul>
+          <div class="dialogue-actions">
+            <button class="next-button btn btn-red" data-next="compressions">Start compressions</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== COMPRESSIONS ============================== -->
+    <section id="screen-compressions" class="screen game-screen">
+      <div class="dialogue hud">
+        <div class="rate-panel">
+          <span class="beat" aria-hidden="true"></span>
+          <p class="big-number"><span id="live-rate">–</span> <small>/min</small></p>
+          <p class="muted rate-target">Push on every beat<br>Target: 100 to 120</p>
+        </div>
+        <div class="hud-middle">
+          <!-- The panda coach says the warnings. camera.js changes its face
+               (#live-panda) with the feedback: good, warn or bad -->
+          <div class="live-coach">
+            <img id="live-panda" class="live-panda" src="assets/mascot-stickers/05-cool.png" alt="">
+            <div class="live-bubble">
+              <p id="live-feedback"></p>
+              <p id="live-depth-reminder" class="bad"></p>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="stat">Compressions<strong id="live-count">0</strong></div>
+            <div class="stat">Pauses<strong id="live-pauses">0</strong></div>
+            <div class="stat">Arms<strong id="live-arms">–</strong></div>
+            <div class="stat">Depth<strong id="live-depth">–</strong></div>
+          </div>
+        </div>
+        <div class="dialogue-actions">
+          <!-- main.js counts down from 30 s, then the ambulance arrives -->
+          <div class="ambulance-timer">
+            <span class="timer-label">Ambulance in</span>
+            <strong id="ambulance-countdown">30</strong>
+            <span class="timer-label">sec</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== AMBULANCE ============================== -->
+    <section id="screen-ambulance" class="screen game-screen">
+      <div class="dialogue">
+        <img class="dialogue-portrait" src="assets/mascot-stickers/18-joyful.png" alt="">
+        <div class="dialogue-body">
+          <p class="dialogue-name">Help has arrived!</p>
+          <p class="dialogue-text" id="ambulance-text">The paramedics take over. You kept him going until they arrived. Well done!</p>
+          <div class="dialogue-actions">
+            <button class="next-button btn" data-next="results">See my results</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== RESULTS ============================== -->
+    <!-- main.js fills the result-... elements with computeScore(game). -->
+    <section id="screen-results" class="screen lesson">
+      <div class="results-hero">
+        <img class="sticker sticker-big" src="assets/mascot-stickers/13-proud.png" alt="">
+        <p class="mission-kicker" id="result-kicker">Mission complete</p>
+        <h2 class="screen-title" id="result-title">Emergency handled!</h2>
+        <div class="grade-badge"><span id="result-grade">–</span></div>
+        <p class="results-total"><strong id="result-total">0</strong> points · <span id="result-grade-label"></span></p>
+      </div>
+
+      <!-- The evaluation grid: main.js (drawGrid) fills #eval-body from score.js.
+           Wrong answers, time-outs and doing the wrong thing for a long time all cost points here. -->
+      <table class="eval-grid">
+        <caption>How your grade was calculated</caption>
+        <thead>
+          <tr>
+            <th scope="col">Criterion</th>
+            <th scope="col">Target</th>
+            <th scope="col">Your result</th>
+            <th scope="col">Points</th>
+            <th scope="col">Verdict</th>
+          </tr>
+        </thead>
+        <tbody id="eval-body"></tbody>
+        <tfoot>
+          <tr>
+            <th scope="row">Total</th>
+            <td class="eval-target"></td>
+            <td></td>
+            <td class="eval-points" id="eval-total">0 / 100</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+      <p class="eval-legend">
+        <strong>A</strong> 90+ · <strong>B</strong> 75+ · <strong>C</strong> 60+ · <strong>D</strong> 40+ · <strong>F</strong> below 40.
+        You get one answer per step: a wrong answer is worth 0 and a right answer after the timer is worth half. The rest is measured by your webcam.
+      </p>
+
+      <div class="coach">
+        <img class="sticker" src="assets/mascot-stickers/15-winking.png" alt="">
+        <div class="bubble"><p class="bubble-name">Tip</p><p id="result-tip"></p></div>
+      </div>
+
+      <footer class="lesson-footer">
+        <div class="lesson-footer-inner results-footer">
+          <a class="link-button" href="#sources">Where does this advice come from?</a>
+          <button class="next-button btn" data-next="home">Back to home</button>
+        </div>
+      </footer>
+    </section>
+
+  </main>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
