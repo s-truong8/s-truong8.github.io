@@ -1,0 +1,65 @@
+[
+  {
+    "id": "safety",
+    "title": "Is it safe?",
+    "speaker": "coach",
+    "source": "Canadian Red Cross, First Aid & CPR learner guide (2025), Check, Call, Care: Check the scene first (is the scene safe?). See the Sources pop-up (#sources).",
+    "line": "A man has just collapsed on the sidewalk in front of you. What do you do first?",
+    "choices": [
+      {"text": "Look around: is it safe for me to go to him? (traffic, electricity, fire...)", "correct": true, "next": "response", "feedback": "Right: you can't help him if you get hurt too."},
+      {"text": "Run straight to him without looking", "correct": false, "feedback": "Stop! Check for danger first, or there could be two victims."},
+      {"text": "Film the scene for the paramedics", "correct": false, "feedback": "No time for that. Check for danger, then act."}
+    ],
+    "timeLimit": 10
+  },
+  {
+    "id": "response",
+    "title": "Does he respond?",
+    "speaker": "coach",
+    "source": "Canadian Red Cross, First Aid & CPR learner guide (2025), Check, Call, Care: Check whether the person is responsive. See the Sources pop-up (#sources).",
+    "line": "It's safe. You kneel next to him. How do you check if he is conscious?",
+    "choices": [
+      {"text": "Gently shake his shoulders and ask loudly: \"Are you OK?\"", "correct": true, "next": "breathing", "feedback": "Good: gentle but loud."},
+      {"text": "Wait a minute to see if he wakes up", "correct": false, "feedback": "Every minute counts. Check now."},
+      {"text": "Slap his face hard", "correct": false, "feedback": "Too rough. Shake his shoulders gently and talk loudly."}
+    ],
+    "timeLimit": 10
+  },
+  {
+    "id": "breathing",
+    "title": "Is he breathing?",
+    "speaker": "coach",
+    "source": "Canadian Red Cross, First Aid & CPR learner guide (2025): check for normal breathing for 5 to 10 seconds; occasional gasping (agonal breathing) is not normal breathing, so care for the person as if they are not breathing. See the Sources pop-up (#sources).",
+    "line": "He doesn't respond. You tilt his head back and look, listen and feel for breathing, for no more than 10 seconds. He only makes a few slow gasps. Is that normal breathing?",
+    "choices": [
+      {"text": "No: slow gasps are not normal breathing. His heart has probably stopped.", "correct": true, "next": "call", "feedback": "Exactly. Gasps are a sign of cardiac arrest."},
+      {"text": "Yes, he is breathing, so I just wait", "correct": false, "feedback": "Slow gasps are NOT normal breathing. Treat it as a cardiac arrest."}
+    ],
+    "timeLimit": 12
+  },
+  {
+    "id": "call",
+    "title": "Call for help",
+    "speaker": "coach",
+    "source": "Heart & Stroke Foundation of Canada, Hands-Only CPR poster (phone 9-1-1, speaker mode, shout for an AED); Canadian Red Cross learner guide (2025). In Canada the emergency number is 9-1-1.",
+    "line": "He doesn't respond and isn't breathing normally. What do you do now?",
+    "choices": [
+      {"text": "Call 911 and put the phone on speaker", "correct": true, "next": "dispatcher", "feedback": "Speaker mode keeps your hands free for compressions."},
+      {"text": "Drive him to the hospital myself", "correct": false, "feedback": "Too slow, and dangerous. Call 911: help comes to you."},
+      {"text": "Call a friend to ask what to do", "correct": false, "feedback": "Call 911: the dispatcher is trained to guide you."}
+    ],
+    "timeLimit": 8
+  },
+  {
+    "id": "dispatcher",
+    "title": "Talk to the dispatcher",
+    "speaker": "dispatcher",
+    "source": "Heart & Stroke Foundation of Canada, 2025 Highlights, Canadian edition: dispatchers guide lay rescuers through Hands-Only CPR for adults.",
+    "line": "911, what is your emergency?",
+    "choices": [
+      {"text": "A man collapsed. He doesn't respond and isn't breathing normally. We're at 1450 Rue Guy, Montréal, QC H3H 0A1.", "correct": true, "next": "end", "feedback": "Clear and complete: what happened, his state, and where you are. Now, start compressions!"},
+      {"text": "Hurry, come quickly!", "correct": false, "feedback": "The dispatcher needs details: what happened, his state, and your address."}
+    ],
+    "timeLimit": 10
+  }
+]

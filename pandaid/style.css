@@ -1,0 +1,2247 @@
+/* ============================================================
+   PANDAID CPR: field manual x heart monitor.
+   Paper white and ink black, ONE signal red, first-aid green.
+   Square corners, ruled lines, hard shadows. Change the colors here
+   and the whole app follows.
+   ============================================================ */
+:root {
+  --bg: #f5f5f2;           /* paper */
+  --surface: #ffffff;
+  --surface-2: #e6e5df;
+  --ink: #141414;          /* text and all the borders */
+  --muted: #4f4f4a;
+  --line: #c9c8c1;         /* thin rules */
+
+  --red: #d7261e;          /* the signal color */
+  --green: #0a6b45;        /* first-aid green */
+  --amber: #f5b83d;
+  --amber-text: #b4410b;   /* amber that is readable on paper */
+
+  /* The dark "heart monitor" look (compressions HUD) */
+  --mon: #0f1412;
+  --mon-line: #2a332f;
+  --mon-green: #3be08a;
+  --mon-muted: #8a968f;
+
+  /* Text colors for live feedback (used by camera.js and scenario.js classes) */
+  --good: #0a6b45;
+  --warn: #b4410b;
+  --bad: #d7261e;
+
+  --font: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --display: "Fredoka", "Nunito", system-ui, sans-serif;
+  --mono: "Nunito", system-ui, sans-serif;  /* small labels and numbers: friendly, not typewriter */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 18px;
+  font-weight: 500;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+h1, h2, h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+h3 { line-height: 1.15; font-weight: 600; }
+
+p {
+  margin: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* Line icons: the stroke takes the text color */
+.icon {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   BUTTONS: flat, ink-bordered, with a hard shadow that "presses"
+   ============================================================ */
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 160px;
+  min-height: 52px;
+  padding: 0 26px;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--ink);
+  box-shadow: 5px 5px 0 var(--red);
+  color: var(--bg);
+  font-size: 17px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 0.06s, box-shadow 0.06s;
+}
+
+.btn:hover { transform: translate(-1px, -1px); box-shadow: 6px 6px 0 var(--red); }
+
+.btn:active {
+  transform: translate(5px, 5px);
+  box-shadow: 0 0 0 var(--red);
+}
+
+/* Start buttons and the main actions: red, with an ink shadow */
+.btn-orange,
+.btn-red { background: var(--red); color: #ffffff; box-shadow: 5px 5px 0 var(--ink); }
+.btn-orange:hover,
+.btn-red:hover { box-shadow: 6px 6px 0 var(--ink); }
+.btn-orange:active,
+.btn-red:active { box-shadow: 0 0 0 var(--ink); }
+
+/* The camera button: outlined */
+.btn-blue { background: var(--surface); color: var(--ink); box-shadow: 5px 5px 0 var(--ink); }
+.btn-blue:hover { box-shadow: 6px 6px 0 var(--ink); }
+.btn-blue:active { box-shadow: 0 0 0 var(--ink); }
+
+.btn-big {
+  min-height: 60px;
+  padding: 0 30px;
+  font-size: 19px;
+}
+
+.btn-small {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 20px;
+  box-shadow: none;
+  font-size: 16px;
+}
+
+.btn-small:hover { transform: none; box-shadow: none; background: var(--red); }
+.btn-small:active { transform: none; }
+
+.btn:disabled {
+  background: var(--surface-2);
+  border-color: var(--line);
+  box-shadow: none;
+  color: #8a8982;
+  cursor: default;
+  transform: none;
+}
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.icon-button:hover { background: var(--ink); color: var(--bg); }
+
+a { color: var(--ink); }
+
+:focus-visible {
+  outline: 3px solid var(--red);
+  outline-offset: 3px;
+}
+
+/* ============================================================
+   TOP BAR: shown on all screens except the home page
+   ============================================================ */
+#lesson-bar {
+  display: none;
+  align-items: center;
+  gap: 16px;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 16px 16px 4px;
+}
+
+body:not([data-screen="home"]) #lesson-bar { display: flex; }
+
+/* The progress track: a thick ruled bar, like a monitor gauge */
+.progress {
+  flex: 1;
+  height: 20px;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0;
+  background: repeating-linear-gradient(90deg, var(--ink) 0 12px, var(--surface) 12px 15px);
+  transition: width 0.5s ease;
+}
+
+body[data-screen="setup"] .progress-fill        { width: 10%; }
+body[data-screen="scene"] .progress-fill        { width: 25%; }
+body[data-screen="decisions"] .progress-fill    { width: 45%; }
+body[data-screen="tutorial"] .progress-fill     { width: 62%; }
+body[data-screen="compressions"] .progress-fill { width: 78%; }
+body[data-screen="ambulance"] .progress-fill    { width: 92%; }
+body[data-screen="results"] .progress-fill      { width: 100%; }
+
+/* ============================================================
+   MAIN AREA AND SCREENS
+   ============================================================ */
+main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 20px 16px;
+}
+
+/* The home page is full width: its sections choose their own width */
+body[data-screen="home"] main {
+  max-width: none;
+  padding: 0;
+}
+
+/* Screens: all hidden, except the one with the class "active". */
+.screen {
+  display: none;
+}
+
+.screen.active {
+  display: block;
+  animation: screen-in 0.25s ease-out;
+}
+
+/* Opacity only: a transform here would break the fixed footer */
+@keyframes screen-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Lesson screens (setup, results): centered text */
+.lesson {
+  text-align: center;
+}
+
+.screen-title {
+  font-size: 44px;
+  margin: 12px 0 20px;
+}
+
+.lesson-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-top: 2px solid var(--ink);
+  background: var(--bg);
+  z-index: 10;
+}
+
+.lesson-footer-inner {
+  display: flex;
+  justify-content: flex-end;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 18px 16px 24px;
+}
+
+/* ============================================================
+   COACH: the panda with a speech box
+   ============================================================ */
+.coach {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: 20px 0;
+  text-align: left;
+}
+
+.bubble {
+  position: relative;
+  flex: 1;
+  padding: 14px 18px;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+/* The little notch pointing at the speaker */
+.bubble::before {
+  content: "";
+  position: absolute;
+  left: -11px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  background: var(--surface);
+  border-left: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  transform: rotate(45deg);
+}
+
+.bubble-name {
+  margin-bottom: 2px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ============================================================
+   MASCOT STICKERS (PNG images in assets/mascot-stickers)
+   ============================================================ */
+.sticker {
+  width: 104px;
+  height: 104px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.sticker-small { width: 130px; height: 130px; object-fit: contain; }
+.sticker-big   { width: 150px; height: 150px; }
+
+/* ============================================================
+   HOME: the title screen (a game menu, not a web page)
+   ============================================================ */
+.title-screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 72px 24px 150px;
+  overflow: hidden;
+  /* sky on top, sidewalk below */
+  background: linear-gradient(#ecebe6 68%, #d6d3ca 68%);
+}
+
+/* The street line */
+.title-screen::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 68%;
+  height: 4px;
+  background: var(--ink);
+}
+
+.title-city {
+  position: absolute;
+  left: 0;
+  bottom: 32%;
+  width: 100%;
+  height: 52%;
+}
+
+.title-warning {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 24px;
+  background: var(--ink);
+  color: var(--bg);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.safety-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--red);
+  flex-shrink: 0;
+}
+
+.title-main {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.title-kicker {
+  padding: 4px 12px;
+  background: var(--ink);
+  color: var(--bg);
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* The game logo: huge, with a hard shadow */
+.title-logo {
+  margin: 18px 0 0;
+  font-size: clamp(56px, 10.5vw, 150px);
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 0.95;
+  text-shadow: 5px 5px 0 var(--red);
+}
+
+.logo-cpr {
+  display: inline-block;
+  padding: 0 0.12em;
+  background: var(--red);
+  color: #ffffff;
+  text-shadow: none;
+  transform: rotate(-3deg);
+}
+
+.title-sub {
+  margin-top: 22px;
+  font-size: clamp(18px, 2.2vw, 26px);
+  font-weight: 700;
+}
+
+.btn-play {
+  font-family: var(--display);
+  margin-top: 34px;
+  min-width: 260px;
+  min-height: 76px;
+  gap: 16px;
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  animation: play-pulse 1.6s ease-in-out infinite;
+}
+
+.btn-play .icon { width: 28px; height: 28px; stroke-width: 0; }
+
+@keyframes play-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.04); }
+}
+
+.title-menu {
+  display: flex;
+  gap: 14px;
+  margin-top: 26px;
+}
+
+.menu-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 46px;
+  padding: 0 22px;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  box-shadow: 4px 4px 0 var(--ink);
+  color: var(--ink);
+  font-weight: 800;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: transform 0.06s, box-shadow 0.06s;
+}
+
+.menu-btn:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--ink); }
+.menu-btn:active { transform: translate(4px, 4px); box-shadow: none; }
+
+/* The panda waits on the sidewalk, bobbing */
+.title-mascot {
+  position: absolute;
+  z-index: 1;
+  right: 6%;
+  bottom: 17%;
+  width: min(30vw, 400px);
+  animation: bob 2.4s ease-in-out infinite;
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+
+/* The mission route: 4 stops, like levels */
+.route {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  bottom: 26px;
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transform: translateX(-50%);
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+
+.route-stop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.route-stop + .route-stop { border-left: 2px solid var(--ink); }
+
+.route-num {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid currentColor;
+  font-size: 13px;
+}
+
+.route-now { background: var(--ink); color: var(--bg); }
+.route-now .route-num { background: var(--red); border-color: var(--red); color: #ffffff; }
+
+/* Pop-up panels: opened with a link (#how, #safety), closed with "#" */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal:target { display: flex; }
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 20, 20, 0.62);
+}
+
+.modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 680px;
+  max-height: 92vh;
+  overflow-y: auto;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  box-shadow: 8px 8px 0 var(--ink);
+  animation: dialogue-in 0.25s ease-out;
+}
+
+.modal-warning { border-color: var(--red); box-shadow: 8px 8px 0 var(--red); }
+
+.card-bar {
+  padding: 10px 22px;
+  background: var(--ink);
+  color: var(--bg);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.modal-warning .card-bar { background: var(--red); color: #ffffff; }
+
+.modal-body { padding: 24px 28px 28px; }
+.modal-body h2 { margin-bottom: 18px; font-size: 40px; }
+.modal-body .modal-close { margin-top: 22px; }
+.modal-need { margin-top: 18px; font-size: 16px; }
+
+.warning-main { font-size: 26px; font-weight: 800; line-height: 1.2; }
+.modal-body .muted { margin-top: 14px; }
+
+/* The stages list inside the briefing */
+.stages {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-bottom: 2px solid var(--ink);
+}
+
+.stage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  align-items: baseline;
+  padding: 14px 0;
+  border-top: 2px solid var(--ink);
+}
+
+.stage-num {
+  flex: 0 0 54px;
+  font-family: var(--display);
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 0.9;
+}
+
+.stage-hot .stage-num { color: var(--red); }
+.stage h3 { flex: 1 1 200px; font-size: 20px; }
+.stage p { flex: 1 1 100%; padding-left: 72px; color: #3d3d39; font-size: 16px; }
+
+/* ============================================================
+   SETUP AND RESULTS: on the same street backdrop as the game,
+   with the content in a framed panel
+   ============================================================ */
+body[data-screen="setup"]::before,
+body[data-screen="results"]::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: linear-gradient(#ecebe6 70%, #d6d3ca 70%);
+}
+
+body[data-screen="setup"]::after,
+body[data-screen="results"]::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 30%;
+  height: 34%;
+  z-index: -1;
+  border-bottom: 4px solid var(--ink);
+  background:
+    linear-gradient(#dedcd5, #dedcd5) 4% 100% / 12% 70% no-repeat,
+    linear-gradient(#dedcd5, #dedcd5) 20% 100% / 9% 45% no-repeat,
+    linear-gradient(#dedcd5, #dedcd5) 33% 100% / 14% 90% no-repeat,
+    linear-gradient(#dedcd5, #dedcd5) 66% 100% / 11% 60% no-repeat,
+    linear-gradient(#dedcd5, #dedcd5) 80% 100% / 13% 100% no-repeat,
+    linear-gradient(#dedcd5, #dedcd5) 95% 100% / 10% 50% no-repeat;
+}
+
+body[data-screen="setup"] main,
+body[data-screen="results"] main { padding-bottom: 130px; }
+
+.screen.lesson {
+  margin-top: 12px;
+  padding: 28px 24px 36px;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  box-shadow: 8px 8px 0 var(--ink);
+}
+
+.mission-kicker {
+  padding: 4px 14px;
+  background: var(--red);
+  color: #ffffff;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   CAMERA: the canvas (skeleton) sits exactly on top of the video.
+   Both are flipped with scaleX(-1) so it feels like a mirror.
+   ============================================================ */
+#camera-box {
+  display: none;
+  position: relative;
+  max-width: 640px;
+  margin: 0 auto 8px;
+  aspect-ratio: 4 / 3;
+  background: var(--mon);
+  border: 2px solid var(--ink);
+  overflow: hidden;
+}
+
+#camera-box.visible {
+  display: block;
+}
+
+#camera-box video,
+#camera-box canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(-1);
+}
+
+/* Behind the video: only seen while the camera is off */
+.camera-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #5d6a63;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.camera-placeholder .icon { width: 40px; height: 40px; }
+
+.camera-safety {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 7px 12px;
+  background: var(--ink);
+  color: var(--amber);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   SETUP SCREEN
+   ============================================================ */
+.setup-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* camera.js sets the class of #setup-arm and #setup-depth to "good", "warn", "bad" or "" */
+#setup-arm,
+#setup-depth {
+  padding: 8px 16px;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+#setup-arm:empty,
+#setup-depth:empty { display: none; }
+
+.count-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 6px 6px 16px;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.count-chip strong {
+  min-width: 40px;
+  padding: 2px 10px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 20px;
+}
+
+/* Debug panel on the setup screen (for the team) */
+#debug-panel {
+  margin: 28px 0 0;
+  padding: 12px 16px;
+  border: 2px dashed #9c9b94;
+  text-align: left;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+#debug-panel summary { cursor: pointer; }
+
+#debug-canvas {
+  display: block;
+  width: 100%;
+  height: 140px;
+  margin: 12px 0 8px;
+  background: #eef3ef; /* light, because camera.js draws dark lines */
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.slider-row input {
+  flex: 1;
+  accent-color: var(--ink);
+}
+
+/* ============================================================
+   DECISIONS (scenario.js fills it)
+   ============================================================ */
+/* Countdown: scenario.js sets the width of #decision-timer from 100% to 0% */
+.timer {
+  height: 8px;
+  margin: 18px 0;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.timer-fill {
+  width: 100%;
+  height: 100%;
+  background: var(--amber);
+  transition: width 0.25s linear;
+}
+
+/* Last 3 seconds of the timer */
+.timer-fill.urgent { background: var(--red); }
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--surface);
+  box-shadow: 4px 4px 0 var(--ink);
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 700;
+  text-align: left;
+  transition: transform 0.06s, box-shadow 0.06s;
+}
+
+.choice:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--ink); }
+.choice:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: none; }
+.choice:disabled { cursor: default; }
+.choice:disabled:not(.correct):not(.wrong) { opacity: 0.45; box-shadow: none; }
+
+.choice-key {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 2px solid currentColor;
+  font-family: var(--mono);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* Right: filled green. Wrong: red text, crossed out. */
+.choice.correct { background: var(--green); border-color: var(--green); box-shadow: none; transform: translate(4px, 4px); color: #ffffff; }
+.choice.wrong   { border-color: var(--red); box-shadow: none; transform: translate(4px, 4px); color: var(--red); text-decoration: line-through; }
+
+#decision-feedback {
+  min-height: 24px;
+  margin-top: 16px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+/* The row of steps at the top of the decisions screen (scenario.js builds it) */
+.step-map {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin: 8px 0 22px;
+  padding: 0;
+  list-style: none;
+}
+
+.step-dot {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 40px;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  color: #8a8982;
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.step-dot + .step-dot { border-left: 0; }
+
+.step-dot.done    { background: var(--surface); color: var(--green); }
+.step-dot.failed  { background: var(--red); color: #ffffff; }
+.step-dot.current { background: var(--ink); color: var(--bg); }
+.step-dot.locked  { background: var(--surface); color: #8a8982; }
+
+/* ============================================================
+   COMPRESSIONS SCREEN: live feedback
+   ============================================================ */
+.rate-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 8px;
+}
+
+/* Metronome dot: one pulse every 0.545 s = 110 per minute */
+.beat {
+  width: 16px;
+  height: 16px;
+  margin-bottom: 4px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: beat 0.545s ease-out infinite;
+}
+
+@keyframes beat {
+  0%   { transform: scale(1.4); box-shadow: 0 0 0 0 rgba(255, 90, 78, 0.6); }
+  60%  { transform: scale(1);   box-shadow: 0 0 0 12px rgba(255, 90, 78, 0); }
+  100% { transform: scale(1); }
+}
+
+.big-number {
+  font-family: var(--display);
+  font-variant-numeric: tabular-nums;
+  font-size: 64px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.big-number small {
+  font-size: 18px;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+
+.rate-target { font-size: 14px; }
+
+/* camera.js sets the class of #live-feedback to "good", "warn", "bad" or "" */
+#live-feedback {
+  display: inline-block;
+  min-height: 46px;
+  margin: 14px 0 18px;
+  padding: 8px 18px;
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  border: 2px solid var(--ink);
+}
+
+.stat {
+  padding: 12px 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.stat + .stat { border-left: 2px solid var(--ink); }
+
+.stat strong {
+  display: block;
+  font-family: var(--display);
+  margin-top: 4px;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+}
+
+/* Feedback colors (after the rules above so they win) */
+.screen .good, .stat .good { color: var(--good); }
+.screen .warn, .stat .warn { color: var(--warn); }
+.screen .bad { color: var(--bad); }
+
+/* "Push deeper!" reminder on the compressions screen */
+#live-depth-reminder {
+  min-height: 28px;
+  margin-top: 0;
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   RESULTS SCREEN: an incident report with a stamp
+   ============================================================ */
+.results-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.results-hero .screen-title { color: var(--ink); margin-bottom: 20px; }
+
+/* The grade is a rubber stamp */
+.grade-badge {
+  font-family: var(--display);
+  display: grid;
+  place-items: center;
+  width: 170px;
+  height: 170px;
+  border: 6px solid var(--red);
+  color: var(--red);
+  font-size: 110px;
+  font-weight: 900;
+  line-height: 1;
+  transform: rotate(-6deg);
+  animation: stamp 0.4s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+@keyframes stamp {
+  from { transform: rotate(-6deg) scale(2); opacity: 0; }
+  to   { transform: rotate(-6deg) scale(1); opacity: 1; }
+}
+
+.results-total {
+  margin: 22px 0 24px;
+  font-family: var(--mono);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.results-total strong { color: var(--ink); font-size: 22px; }
+
+.result-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+}
+
+.result-tile {
+  display: flex;
+  flex-direction: column;
+}
+
+.result-tile + .result-tile { border-left: 2px solid var(--ink); }
+
+.tile-label {
+  padding: 8px 6px;
+  border-bottom: 2px solid var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.result-tile strong {
+  padding: 14px 6px;
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   SMALL SCREENS
+   ============================================================ */
+@media (max-width: 900px) {
+  .hero { padding-top: 40px; }
+  .hero-mascot { order: -1; flex-basis: 100%; }
+  .mascot-panel { aspect-ratio: 4 / 3; }
+}
+
+@media (max-width: 600px) {
+  .wrap { padding-left: 16px; padding-right: 16px; }
+  .nav-right { gap: 16px; }
+  .nav-right .nav-link { display: none; }
+  .home-block { padding-top: 64px; }
+  .lesson-footer-inner .btn { width: 100%; }
+  .result-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .result-tile:nth-child(3) { border-left: 0; }
+  .result-tile:nth-child(n+3) { border-top: 2px solid var(--ink); }
+  .sticker { width: 76px; height: 76px; }
+  .sticker-big { width: 120px; height: 120px; }
+  .stage-num { flex-basis: 72px; font-size: 52px; }
+  .card { padding: 24px; }
+  .big-number { font-size: 52px; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat:nth-child(3) { border-left: 0; }
+  .stat:nth-child(n+3) { border-top: 2px solid var(--ink); }
+  .coach { gap: 14px; }
+}
+
+/* Less movement for players who asked their system for it */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ============================================================
+   GAME MODE: the emergency screens look like a playable game.
+   main.js adds the class "game-mode" to <body> on: scene, decisions,
+   tutorial, compressions, ambulance.
+   - #victim-scene fills the whole screen, behind everything
+   - each screen is a dialogue box fixed at the bottom
+   - the top bar and the step dots float on top of the scene
+   - during compressions, the camera is a small window in the corner
+   ============================================================ */
+#victim-scene {
+  display: none;
+}
+
+body.game-mode #victim-scene {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  /* Fills the space around the drawing: sky on top, sidewalk below
+     (48% = where the sidewalk starts in the drawing) */
+  background: linear-gradient(#ecebe6 48%, #d6d3ca 48%);
+}
+
+.victim {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+body.game-mode #lesson-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 6;
+}
+
+/* The dialogue box at the bottom */
+.game-screen.active {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  padding: 0 16px 20px;
+}
+
+.dialogue {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  max-width: 960px;
+  max-height: 62vh;
+  margin: 0 auto;
+  padding: 18px 22px;
+  overflow-y: auto;
+  border: 3px solid var(--border);
+  border-bottom-width: 7px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 12px 40px rgba(59, 36, 22, 0.18);
+  animation: dialogue-in 0.3s ease-out;
+}
+
+@keyframes dialogue-in {
+  from { transform: translateY(30px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+.dialogue-portrait {
+  width: clamp(130px, 22vh, 190px);
+  height: clamp(130px, 22vh, 190px);
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.dialogue-body {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.dialogue-name {
+  margin-bottom: 4px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dialogue-step {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border: 1px solid var(--ink);
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.dialogue-text {
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.dialogue-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+/* Who is speaking: red bar for the emergency, ink bar for the dispatcher */
+.dialogue-alert { border-color: var(--red); box-shadow: 8px 8px 0 var(--red); }
+.dialogue-alert .dialogue-name { color: var(--red); }
+.dialogue.bubble-blue { border-width: 2px; }
+.dialogue.bubble-blue::before { display: none; }
+.dialogue.bubble-blue .dialogue-name { color: var(--green); }
+
+/* Decisions inside the dialogue box: more compact */
+.dialogue .timer { margin: 12px 0; }
+.dialogue .choices { gap: 10px; }
+.dialogue .choice { padding: 10px 14px; font-size: 16px; }
+.dialogue #decision-feedback { margin-top: 10px; min-height: 22px; }
+
+/* The step dots float at the top of the scene */
+body.game-mode .step-map {
+  position: fixed;
+  top: 68px;
+  left: 0;
+  right: 0;
+  z-index: 6;
+  margin: 0;
+}
+
+/* Tutorial tips as ruled lines */
+.tip-chips {
+  display: flex;
+  flex-direction: column;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tip-chips li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.tip-chips .icon { width: 22px; height: 22px; color: var(--red); }
+
+/* Compressions: the dialogue box is a heart monitor */
+.hud {
+  align-items: center;
+  border-color: var(--mon-line);
+  background: var(--mon);
+  box-shadow: 8px 8px 0 var(--ink);
+  color: #e8ede9;
+  font-family: var(--mono);
+}
+
+.hud .rate-panel {
+  margin: 0;
+  min-width: 170px;
+}
+
+.hud .big-number { font-size: 64px; color: var(--mon-green); }
+.hud .big-number small { color: var(--mon-muted); }
+.hud .muted,
+.hud .rate-target { color: var(--mon-muted); }
+.hud .beat { background: #ff5a4e; }
+
+.hud-middle {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.hud #live-feedback { margin: 0 0 4px; min-height: 40px; font-size: 20px; }
+.hud #live-depth-reminder { min-height: 26px; margin-bottom: 6px; font-size: 16px; }
+
+.hud .stats { border-color: var(--mon-line); }
+.hud .stat { padding: 8px 6px; font-size: 11px; color: var(--mon-muted); }
+.hud .stat + .stat { border-left-color: var(--mon-line); }
+.hud .stat strong { font-size: 20px; color: #e8ede9; }
+.hud .dialogue-actions { margin-top: 0; }
+
+/* Feedback colors on the dark monitor (brighter, so they stay readable) */
+.hud .good, .hud .stat .good { color: var(--mon-green); }
+.hud .warn, .hud .stat .warn { color: var(--amber); }
+.hud .bad { color: #ff5a4e; }
+
+/* The Continue button on the monitor: outlined */
+.hud .btn { background: transparent; border-color: #e8ede9; color: #e8ede9; box-shadow: none; }
+.hud .btn:hover { background: #e8ede9; color: var(--mon); transform: none; }
+
+/* Compressions: the camera is a small window in the top-right corner */
+body.game-mode #camera-box.visible {
+  position: fixed;
+  top: 76px;
+  right: 16px;
+  z-index: 6;
+  width: 460px;
+  margin: 0;
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+/* Hidden until the story needs them */
+#victim-phone,
+#victim-hands,
+#scene-ambulance {
+  display: none;
+}
+
+#victim-scene.after-call #victim-phone {
+  display: block;
+  animation: pop 0.4s cubic-bezier(0.3, 1.6, 0.5, 1);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes pop {
+  from { transform: scale(0); }
+  to   { transform: scale(1); }
+}
+
+/* Compressions: the hands are on the chest */
+body[data-screen="compressions"] #victim-hands {
+  display: block;
+}
+
+/* The alert sign pulses until the ambulance arrives */
+#victim-alert {
+  animation: alert-blink 1s ease-in-out infinite;
+}
+
+body[data-screen="tutorial"] #victim-alert,
+body[data-screen="compressions"] #victim-alert,
+body[data-screen="ambulance"] #victim-alert {
+  display: none;
+}
+
+@keyframes alert-blink {
+  50% { opacity: 0.35; }
+}
+
+/* One compression: the chest (and the hands) go down, then back up */
+.victim-chest {
+  transition: transform 0.12s ease-out;
+}
+
+#victim-scene.press .victim-chest {
+  transform: translateY(6px);
+}
+
+/* Ambulance screen: the ambulance drives in from the right, siren on */
+body[data-screen="ambulance"] #scene-ambulance {
+  display: block;
+}
+
+/* The drive-in starts once the zoom-out has finished (0.9s), then the
+   ambulance brakes hard: long deceleration, nose dip, wheels slowing down. */
+body[data-screen="ambulance"] .ambulance-body {
+  animation: drive-in 2.2s cubic-bezier(0.12, 0.7, 0.25, 1) 0.8s both;
+  transform-origin: 101px 98px;
+}
+
+body[data-screen="ambulance"] .amb-bounce {
+  animation: amb-bounce 0.35s ease-in-out 0.8s 5 alternate;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+body[data-screen="ambulance"] .wheel {
+  animation: wheel-spin 2.2s cubic-bezier(0.12, 0.7, 0.25, 1) 0.8s both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+body[data-screen="ambulance"] .amb-shadow { animation: fade-in 0.6s 0.8s both; }
+
+.siren { animation: siren 0.5s steps(1) infinite; }
+.siren-glow { animation: siren-glow 0.5s steps(1) infinite; }
+.headlight { filter: drop-shadow(0 0 4px #ffe27a); }
+
+@keyframes siren {
+  0%  { fill: var(--red); }
+  50% { fill: #3d8bfd; }
+}
+
+@keyframes siren-glow {
+  0%  { fill: var(--red); opacity: 0.45; }
+  50% { fill: #3d8bfd; opacity: 0.45; }
+}
+
+@keyframes drive-in {
+  0%   { transform: translateX(700px) rotate(0); }
+  72%  { transform: translateX(14px) rotate(0); }
+  84%  { transform: translateX(4px) rotate(-2.2deg); }
+  100% { transform: none; }
+}
+
+@keyframes wheel-spin {
+  from { transform: rotate(0); }
+  to   { transform: rotate(-1900deg); }
+}
+
+@keyframes amb-bounce {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-1.5px); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-screen="ambulance"] .ambulance-body,
+  body[data-screen="ambulance"] .amb-bounce,
+  body[data-screen="ambulance"] .wheel { animation: none; }
+}
+
+/* Compressions: slide the man to the left, so the big camera window
+   on the right doesn't hide him */
+/* ZOOM ON THE CHEST (tutorial and compressions).
+   The whole drawing is scaled 2.4x around the point (660, 500), the chest,
+   then moved so the chest lands in the left-center of the screen (the camera
+   window is on the right, the dialogue box at the bottom).
+   Numbers are in drawing units: translate = target position - 2.4 x chest position. */
+.victim-world {
+  transform-origin: 0 0;
+  transition: transform 0.9s ease-in-out;
+}
+
+body[data-screen="tutorial"] .victim-world,
+body[data-screen="compressions"] .victim-world {
+  transform: translate(-1024px, -600px) scale(2.4);
+}
+
+/* Short screens (small laptops): raise the zoom, so the label under the
+   chest isn't hidden by the dialogue box */
+@media (max-height: 820px) {
+  body[data-screen="tutorial"] .victim-world,
+  body[data-screen="compressions"] .victim-world {
+    transform: translate(-1024px, -680px) scale(2.4);
+  }
+}
+
+/* The "hands here" target, only while zoomed */
+#victim-target {
+  display: none;
+}
+
+body[data-screen="tutorial"] #victim-target,
+body[data-screen="compressions"] #victim-target {
+  display: block;
+}
+
+.target-ring {
+  animation: target-pulse 1.1s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes target-pulse {
+  50% { transform: scale(1.15); opacity: 0.55; }
+}
+
+/* THE ZOOM CIRCLE: a close-up of how to place the hands (index.html: #hands-lens).
+   Top-left of the screen. Big on the tutorial (it plays the "how to place your
+   hands" animation), a bit smaller during compressions (the camera is on the right).
+   Its hands dip at each compression (#victim-scene.press + #hands-lens). */
+#hands-lens {
+  --lens: clamp(220px, 44vh, 400px);
+  position: fixed;
+  top: 76px;
+  left: 24px;
+  z-index: 6;
+  width: var(--lens);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.6s ease 0.5s, visibility 0s linear 1.1s, width 0.5s ease;
+}
+
+body[data-screen="compressions"] #hands-lens {
+  --lens: clamp(190px, 34vh, 320px);
+}
+
+body[data-screen="tutorial"] #hands-lens,
+body[data-screen="compressions"] #hands-lens {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.6s ease 0.5s, width 0.5s ease;
+}
+
+.lens-circle {
+  width: var(--lens);
+  height: var(--lens);
+  overflow: hidden;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  background: #4f7fd9;
+  box-shadow: 6px 6px 0 var(--ink);
+  transition: width 0.5s ease, height 0.5s ease;
+}
+
+.lens-circle svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.lens-tag {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  z-index: 1;
+  margin: 0;
+  padding: 1px 8px;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: #ffffff;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* All the captions sit in the same grid cell: only one is visible at a time */
+.lens-caption {
+  display: grid;
+  margin: 12px 0 0;
+  padding: 6px 10px;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.lens-caption > span { grid-area: 1 / 1; }
+
+.lens-ring {
+  animation: target-pulse 1.1s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Default (compressions): the final position, fingers interlaced, no labels */
+.lens-labels,
+.lens-nipple-line { opacity: 0; }
+.lens-step { opacity: 0; }
+
+/* Interlaced: the top fingers slide between the bottom ones and curl down */
+.top-fingers {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transform: translateX(5px) scaleY(0.62);
+}
+
+.lens-hands {
+  transition: transform 0.12s ease-out;
+}
+
+#victim-scene.press + #hands-lens .lens-hands {
+  transform: translateY(5px);
+}
+
+/* ---- TUTORIAL: the step-by-step animation (10 s, 2 s per step, loops) ---- */
+body[data-screen="tutorial"] .lens-final { opacity: 0; }
+
+body[data-screen="tutorial"] .lens-step {
+  animation: lens-caption 10s linear infinite;
+  animation-delay: calc(var(--i) * 2s);
+}
+
+body[data-screen="tutorial"] .lens-labels,
+body[data-screen="tutorial"] .lens-nipple-line { animation: lens-labels 10s ease infinite; }
+body[data-screen="tutorial"] .hand-bottom      { animation: lens-hand-bottom 10s ease-out infinite; }
+body[data-screen="tutorial"] .hand-top         { animation: lens-hand-top 10s ease-out infinite; }
+body[data-screen="tutorial"] .top-fingers      { animation: lens-interlace 10s ease-in-out infinite; }
+body[data-screen="tutorial"] .lens-heel        { animation: lens-heel 10s ease infinite; }
+body[data-screen="tutorial"] .lens-push {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: lens-push 10s ease-in-out infinite;
+}
+
+@keyframes lens-caption {
+  0%, 20%     { opacity: 1; }
+  20.1%, 100% { opacity: 0; }
+}
+
+/* step 1: the landmarks are labelled, then fade when the hands come */
+@keyframes lens-labels {
+  0%, 18%   { opacity: 1; }
+  24%, 96%  { opacity: 0; }
+  100%      { opacity: 1; }
+}
+
+/* step 2: the first hand slides in from the player's side */
+@keyframes lens-hand-bottom {
+  0%, 20%  { transform: translateY(150px); opacity: 0; }
+  21%      { opacity: 1; }
+  29%, 96% { transform: translateY(0); opacity: 1; }
+  100%     { transform: translateY(0); opacity: 0; }
+}
+
+/* step 3: the second hand comes on top */
+@keyframes lens-hand-top {
+  0%, 40%  { transform: translateY(150px); opacity: 0; }
+  41%      { opacity: 1; }
+  49%, 96% { transform: translateY(0); opacity: 1; }
+  100%     { transform: translateY(0); opacity: 0; }
+}
+
+/* step 4: the fingers lock together */
+@keyframes lens-interlace {
+  0%, 62%   { transform: none; }
+  72%, 100% { transform: translateX(5px) scaleY(0.62); }
+}
+
+/* the red "push here" dot shows once the first hand is in place */
+@keyframes lens-heel {
+  0%, 28%  { opacity: 0; }
+  32%, 96% { opacity: 1; }
+  100%     { opacity: 0; }
+}
+
+/* step 5: push, push, push */
+@keyframes lens-push {
+  0%, 80%, 84.5%, 89.5%, 94.5%, 100% { transform: scale(1); }
+  82%, 87%, 92%                      { transform: scale(0.93); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-screen="tutorial"] #hands-lens * { animation: none !important; }
+  body[data-screen="tutorial"] .lens-final { opacity: 1; }
+}
+
+/* Not enough room on narrow screens: the chest zoom is enough there */
+@media (max-width: 1000px) {
+  #hands-lens { display: none; }
+}
+
+/* Small screens: smaller portrait and camera, HUD on several lines */
+@media (max-width: 700px) {
+  .game-screen.active { padding: 0 8px 10px; }
+  .dialogue { gap: 12px; padding: 14px; box-shadow: 5px 5px 0 var(--ink); }
+  .dialogue-alert { box-shadow: 5px 5px 0 var(--red); }
+  .dialogue-portrait { width: 64px; height: 64px; }
+  .dialogue-text { font-size: 17px; }
+  .hud { flex-wrap: wrap; }
+  .hud .rate-panel { min-width: 0; flex: 1; }
+  .hud-middle { flex-basis: 100%; order: 3; }
+  body.game-mode #camera-box.visible { width: 200px; top: 120px; right: 8px; }
+
+  /* Phones: zoom on the man (the drawing is wider than the screen and
+     centered, so the buildings on the sides are cut) and put it below
+     the step dots. The man is about 60% of the drawing's width. */
+  .victim {
+    width: 170%;
+    height: auto;
+    margin: 70px 0 0 -35%;
+  }
+
+  /* Where the sidewalk starts: 70px + (drawing height x 48%) = 70px + 46vw */
+  body.game-mode #victim-scene {
+    background: linear-gradient(#ecebe6 calc(70px + 46vw), #d6d3ca calc(70px + 46vw));
+  }
+}
+
+/* Title screen on phones: smaller panda, the route fits the width */
+@media (max-width: 800px) {
+  .title-screen { padding-bottom: 190px; }
+  .title-mascot { right: 50%; bottom: 82px; width: 150px; transform: translateX(50%); animation: none; }
+  .route { width: calc(100% - 24px); }
+  .route-stop { flex: 1; justify-content: center; padding: 10px 4px; font-size: 11px; }
+  .route-stop .route-num { display: none; }
+  .btn-play { min-width: 220px; min-height: 68px; font-size: 28px; }
+  .title-menu { flex-wrap: wrap; justify-content: center; }
+}
+
+/* Compressions: 30 s countdown until the ambulance arrives */
+.ambulance-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 110px;
+  font-family: var(--mono);
+}
+.ambulance-timer .timer-label {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mon-muted);
+}
+.ambulance-timer strong {
+  font-size: 56px;
+  line-height: 1;
+  color: #e8ede9;
+}
+.ambulance-timer strong.timer-low { color: #ff5a4e; }
+
+/* ============================================================
+   FIT ON ONE PAGE: the setup and results screens must not scroll.
+   Sizes follow the window height (vh), so everything shrinks on short screens.
+   ============================================================ */
+body[data-screen="setup"] main,
+body[data-screen="results"] main {
+  padding-top: clamp(6px, 1.5vh, 16px);
+  padding-bottom: clamp(64px, 10vh, 100px);
+}
+
+body[data-screen="setup"] .screen.lesson,
+body[data-screen="results"] .screen.lesson {
+  margin-top: clamp(4px, 1vh, 12px);
+  padding: clamp(12px, 2.4vh, 28px) 24px clamp(14px, 3vh, 36px);
+}
+
+body[data-screen="setup"] .lesson-footer-inner,
+body[data-screen="results"] .lesson-footer-inner {
+  padding: clamp(6px, 1.2vh, 18px) 16px clamp(8px, 1.6vh, 24px);
+}
+
+body[data-screen="setup"] .coach,
+body[data-screen="results"] .coach { margin: clamp(8px, 1.6vh, 20px) 0; }
+
+body[data-screen="setup"] .bubble,
+body[data-screen="results"] .bubble { padding: clamp(8px, 1.4vh, 14px) 18px; font-size: clamp(14px, 2.1vh, 17px); }
+
+/* Results */
+body[data-screen="results"] .sticker-big { width: clamp(52px, 10vh, 150px); height: clamp(52px, 10vh, 150px); }
+body[data-screen="results"] .coach .sticker { width: clamp(52px, 9vh, 104px); height: clamp(52px, 9vh, 104px); }
+body[data-screen="results"] .screen-title { margin: clamp(4px, 1vh, 12px) 0 clamp(6px, 1.4vh, 20px); font-size: clamp(26px, 5vh, 44px); }
+body[data-screen="results"] .mission-kicker { margin-top: clamp(2px, 0.6vh, 8px); }
+body[data-screen="results"] .grade-badge {
+  width: clamp(70px, 14vh, 170px);
+  height: clamp(70px, 14vh, 170px);
+  border-width: clamp(4px, 0.7vh, 6px);
+  font-size: clamp(44px, 9vh, 110px);
+}
+body[data-screen="results"] .results-total { margin: clamp(6px, 1.2vh, 22px) 0 clamp(6px, 1.4vh, 24px); }
+body[data-screen="results"] .tile-label { padding: clamp(4px, 0.9vh, 8px) 6px; }
+body[data-screen="results"] .result-tile strong { padding: clamp(4px, 1vh, 14px) 6px; font-size: clamp(22px, 3.4vh, 30px); }
+
+/* Setup: the camera preview is sized by height, not width, so it never pushes the panel down */
+body[data-screen="setup"] #camera-box.visible {
+  width: auto;
+  height: clamp(130px, 30vh, 320px);
+  max-width: 100%;
+  margin-bottom: clamp(4px, 1vh, 8px);
+}
+body[data-screen="setup"] .coach .sticker { width: clamp(52px, 9vh, 104px); height: clamp(52px, 9vh, 104px); }
+body[data-screen="setup"] .setup-actions { gap: clamp(6px, 1.2vh, 14px); }
+body[data-screen="setup"] #setup-arm,
+body[data-screen="setup"] #setup-depth { padding: clamp(4px, 0.8vh, 8px) 16px; }
+body[data-screen="setup"] .big-number { font-size: clamp(32px, 6vh, 56px); }
+body[data-screen="setup"] #debug-panel { margin-top: clamp(8px, 1.6vh, 28px); }
+
+/* ============================================================
+   SETUP: SIDE PANELS. Camera on the left, instructions and live
+   readings in a framed panel on the right, so nothing scrolls.
+   (Overrides the stacked setup sizes above.)
+   ============================================================ */
+body[data-screen="setup"] #lesson-bar,
+body[data-screen="setup"] .lesson-footer-inner { max-width: 1100px; }
+
+body[data-screen="setup"] main {
+  max-width: 1100px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 28px;
+  align-items: start;
+  padding-bottom: clamp(70px, 11vh, 100px);
+}
+
+body[data-screen="setup"] #camera-box.visible,
+body[data-screen="setup"] #camera-box {
+  grid-column: 1;
+  grid-row: 1;
+  display: block;
+  height: auto;
+  max-width: none;
+  width: min(100%, calc((100vh - 220px) * 4 / 3));
+  margin: clamp(4px, 1vh, 12px) auto 0;
+  box-shadow: 8px 8px 0 var(--ink);
+}
+
+body[data-screen="setup"] #screen-setup {
+  grid-column: 2;
+  grid-row: 1;
+  text-align: left;
+}
+
+body[data-screen="setup"] #screen-setup .coach {
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 0 0 clamp(8px, 1.6vh, 16px);
+}
+body[data-screen="setup"] #screen-setup .bubble { width: 100%; box-sizing: border-box; }
+body[data-screen="setup"] #screen-setup .bubble::before {
+  left: 30px; top: -9px; margin: 0; transform: rotate(135deg);
+}
+body[data-screen="setup"] #screen-setup .setup-actions { align-items: stretch; }
+body[data-screen="setup"] #screen-setup .setup-actions .btn { width: 100%; }
+body[data-screen="setup"] #screen-setup .count-chip { justify-content: space-between; }
+body[data-screen="setup"] #screen-setup .big-number { text-align: center; font-size: clamp(30px, 5vh, 48px); }
+
+@media (max-width: 860px) {
+  body[data-screen="setup"] main { display: block; }
+  body[data-screen="setup"] #camera-box { width: 100%; margin: 0 auto 8px; }
+}
+
+/* =====================================================
+   EVALUATION GRID (results screen): how the grade was calculated
+   ============================================================ */
+body[data-screen="results"] main { max-width: 980px; }
+
+.eval-grid {
+  width: 100%;
+  margin-top: 8px;
+  border: 2px solid var(--ink);
+  border-collapse: collapse;
+  background: var(--surface);
+  text-align: left;
+  font-size: 15px;
+}
+
+.eval-grid caption {
+  padding: 10px 14px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+  caption-side: top;
+}
+
+.eval-grid thead th {
+  padding: 9px 12px;
+  border-bottom: 2px solid var(--ink);
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.eval-grid th,
+.eval-grid td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.eval-grid tbody th { font-weight: 800; }
+
+.eval-measured {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.eval-target { color: var(--muted); }
+
+.eval-points {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* The small lines under "The calls": one per dispatcher step */
+.eval-sub th,
+.eval-sub td { padding-top: 7px; padding-bottom: 7px; background: #faf9f6; font-size: 14px; }
+.eval-sub th { padding-left: 32px; font-weight: 700; }
+.eval-sub .eval-points { font-size: 15px; }
+
+/* The verdict is always a word, so it never depends on color alone */
+.eval-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border: 2px solid var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.eval-badge.good { background: var(--green); border-color: var(--green); color: #ffffff; }
+.eval-badge.warn { background: var(--amber); color: var(--ink); }
+.eval-badge.bad  { background: var(--red); border-color: var(--red); color: #ffffff; }
+
+.eval-grid tfoot th,
+.eval-grid tfoot td {
+  border-top: 2px solid var(--ink);
+  border-bottom: 0;
+  background: var(--surface-2);
+  font-family: var(--display);
+  font-size: 20px;
+}
+
+.eval-legend {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: left;
+}
+
+.coach { margin-top: 24px; }
+
+@media (max-width: 700px) {
+  .eval-grid { font-size: 14px; }
+  .eval-target,
+  .eval-grid thead th:nth-child(2) { display: none; }
+  .eval-grid th,
+  .eval-grid td { padding: 9px 8px; }
+  .eval-sub th { padding-left: 16px; }
+  .eval-grid tfoot th { font-size: 16px; }
+}
+
+/* Compressions: the panda coach says the warnings in a speech bubble */
+.live-coach {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 8px;
+  text-align: left;
+}
+
+.live-panda {
+  width: 92px;
+  height: 92px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.live-panda.talk { animation: panda-hop 0.35s ease-out; }
+
+/* While the voice plays the panda talks: a quick bob, and the bubble glows */
+.live-panda { transform-origin: 50% 100%; }
+.live-panda.speaking { animation: panda-talk 0.28s ease-in-out infinite alternate; }
+@keyframes panda-talk {
+  from { transform: translateY(0) scale(1, 1); }
+  to   { transform: translateY(-4px) scale(0.97, 1.05); }
+}
+.live-bubble { transition: border-color 0.2s, box-shadow 0.2s; }
+.live-bubble.speaking { border-color: var(--mon-green); box-shadow: 0 0 0 3px rgba(59, 224, 138, 0.25); }
+
+@keyframes panda-hop {
+  40% { transform: translateY(-8px) rotate(-4deg); }
+}
+
+.live-bubble {
+  position: relative;
+  flex: 1;
+  min-height: 64px;
+  padding: 8px 14px;
+  border: 2px solid #e8ede9;
+  border-radius: 14px;
+  background: #1d2420;
+}
+
+/* the notch pointing at the panda */
+.live-bubble::before {
+  content: "";
+  position: absolute;
+  left: -9px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+  background: #1d2420;
+  border-left: 2px solid #e8ede9;
+  border-bottom: 2px solid #e8ede9;
+  transform: rotate(45deg);
+}
+
+.hud .live-bubble #live-feedback { min-height: 0; margin: 0; }
+.hud .live-bubble #live-depth-reminder { min-height: 0; margin: 2px 0 0; }
+.hud .live-bubble #live-depth-reminder:empty { display: none; }
+
+@media (max-width: 700px) {
+  .live-panda { width: 60px; height: 60px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-panda.talk, .live-panda.speaking { animation: none; }
+}
+
+/* ============================================================
+   THE PANDA IN THE GAME (panda.js): a big coach standing behind the
+   dialogue box, on the right. The small pictures in the boxes are hidden:
+   they only feed him the right face.
+   ============================================================ */
+#scene-panda {
+  display: none;
+  position: fixed;
+  z-index: 4; /* under the dialogue box (5): the box hides his feet */
+  right: max(24px, calc(50% - 456px));
+  bottom: 220px;
+  width: clamp(150px, 28vh, 250px);
+  height: clamp(150px, 28vh, 250px);
+  object-fit: contain;
+  object-position: bottom;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 8px rgba(20, 20, 20, 0.2));
+  transform-origin: 50% 100%;
+  animation: panda-breathe 3.2s ease-in-out infinite;
+}
+
+body.game-mode #scene-panda { display: block; }
+
+body.game-mode .dialogue-portrait,
+body.game-mode .live-panda { display: none; }
+body.game-mode .live-bubble::before { display: none; }
+
+@keyframes panda-breathe {
+  50% { transform: scale(1.02, 1.035); }
+}
+
+#scene-panda.hop { animation: panda-jump 0.45s ease-out, panda-breathe 3.2s ease-in-out 0.45s infinite; }
+@keyframes panda-jump {
+  30% { transform: translateY(-14px) rotate(-3deg) scale(1.03); }
+  60% { transform: translateY(0) rotate(2deg); }
+}
+
+#scene-panda.speaking { animation: panda-talk-big 0.28s ease-in-out infinite alternate; }
+@keyframes panda-talk-big {
+  from { transform: translateY(0) scale(1, 1); }
+  to   { transform: translateY(-5px) scale(0.97, 1.05); }
+}
+
+@media (max-width: 700px) {
+  #scene-panda { width: 120px; height: 120px; right: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #scene-panda, #scene-panda.hop, #scene-panda.speaking { animation: none; }
+}
+
+/* Sound on / off button, top right of every screen (main.js) */
+#mute-button {
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  z-index: 30;
+}
+#mute-button .mute-slash { display: none; }
+#mute-button.muted .mute-waves { display: none; }
+#mute-button.muted .mute-slash { display: inline; }
+body[data-screen="home"] #mute-button { top: 48px; }
+
+/* The beat dot follows the metronome (main.js adds .on at each beat) */
+.hud .beat { animation: none; }
+.hud .beat.on { animation: beat 0.3s ease-out; }
+.hud .beat.on.accent { box-shadow: 0 0 0 4px rgba(255, 90, 78, 0.35); }
+@media (prefers-reduced-motion: reduce) {
+  .hud .beat.on { animation: none; }
+}
+
+/* Sources pop-up (index.html #sources) */
+.sources-intro { margin: 0 0 12px; }
+.sources-facts { margin: 0 0 16px; padding: 0; list-style: none; border-top: 2px solid var(--ink); }
+.sources-facts li { padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 16px; }
+.sources-facts .src { color: var(--muted); font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+.sources-list { margin: 0 0 12px; padding-left: 22px; font-size: 15px; }
+.sources-list li { padding: 3px 0; }
+.sources-list a, .modal-body .muted a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+.sources-list a:hover, .modal-body .muted a:hover { color: var(--red); }
+.results-footer { align-items: center; justify-content: space-between; gap: 16px; }
+.results-footer .link-button { font-size: 14px; }
+@media (max-width: 600px) { .results-footer { flex-direction: column-reverse; } }
+.link-button { color: var(--ink); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.link-button:hover { color: var(--red); }
+
+/* The phone shakes while it rings (scenario.js adds .phone-ringing to #victim-scene) */
+#victim-scene.after-call.phone-ringing #victim-phone {
+  animation: phone-shake 0.09s linear infinite alternate;
+  transform-box: fill-box;
+  transform-origin: 50% 70%;
+}
+
+@keyframes phone-shake {
+  from { transform: translate(-1.2px, 0) rotate(-9deg); }
+  to   { transform: translate(1.2px, -0.6px) rotate(9deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #victim-scene.after-call.phone-ringing #victim-phone { animation: none; }
+}
+
+
+/* ============================================================
+   PLAYTEST FIXES
+   ============================================================ */
+
+/* Debug panel of the setup screen: only with index.html?debug */
+#debug-panel { display: none; }
+body.debug #debug-panel { display: block; }
+
+/* Tutorial: the zoom circle shrinks on short screens so its caption
+   never covers the dialogue box (about 460px of the height is taken by
+   the top bar and the tutorial box) */
+body[data-screen="tutorial"] #hands-lens {
+  --lens: clamp(160px, calc(100vh - 510px), 400px);
+}
+
+/* Tutorial: the "Hands here" label sits behind the dialogue box there,
+   and the zoom circle already shows it: keep only the ring */
+body[data-screen="tutorial"] #victim-target text { display: none; }
+
+/* Decisions and other game screens: the big panda stands a little more to the
+   right, so he no longer hides the man's legs */
+#scene-panda { right: max(24px, calc(50% - 520px)); }
+
+/* Compressions: the big panda would cover the camera window, so the
+   panda inside the monitor box says the warnings instead */
+body[data-screen="compressions"] #scene-panda { display: none; }
+body.game-mode[data-screen="compressions"] .live-panda { display: block; }
+body.game-mode[data-screen="compressions"] .live-bubble::before { display: block; }
+
+/* Results: the step lines of "The calls" are folded (button in the grid) */
+.eval-grid:not(.show-steps) .eval-sub { display: none; }
+.eval-toggle {
+  display: block;
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Results on a laptop: two columns, so the whole page fits without scrolling.
+   Left: the stamp and the tip. Right: the grid. */
+@media (min-width: 1000px) {
+  body[data-screen="results"] #lesson-bar,
+  body[data-screen="results"] .lesson-footer-inner { max-width: 1160px; }
+  body[data-screen="results"] main { max-width: 1160px; }
+
+  #screen-results.active {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr);
+    grid-template-areas:
+      "hero  grid"
+      "tip   grid"
+      "tip   legend";
+    column-gap: 32px;
+    align-items: start;
+    text-align: left;
+  }
+  #screen-results .results-hero { grid-area: hero; }
+  #screen-results .eval-grid    { grid-area: grid; margin: 0; }
+  #screen-results .eval-legend  { grid-area: legend; margin-top: 8px; }
+  #screen-results > .coach      { grid-area: tip; align-self: start; flex-direction: column; align-items: flex-start; }
+  #screen-results > .coach .bubble::before { left: 30px; top: -9px; margin: 0; transform: rotate(135deg); }
+
+  /* The Target column made every row 3 or 4 lines tall: the legend and the
+     criterion descriptions already say what is expected */
+  #screen-results .eval-grid th:nth-child(2),
+  #screen-results .eval-grid td:nth-child(2) { display: none; }
+
+  /* One panda is enough: the tip bubble goes without its own sticker */
+  #screen-results > .coach .sticker { display: none; }
+  #screen-results > .coach .bubble::before { display: none; }
+  #screen-results > .coach { margin-top: 16px; }
+
+  /* Tighter rows */
+  #screen-results .eval-grid th,
+  #screen-results .eval-grid td { padding-top: 9px; padding-bottom: 9px; }
+  #screen-results .eval-legend { font-size: 13px; }
+  body[data-screen="results"] main { padding-bottom: 84px; }
+}
+
+/* Short laptop screens: drop the small descriptions under each criterion */
+@media (min-width: 1000px) and (max-height: 820px) {
+  #screen-results .eval-measured { display: none; }
+  #screen-results .eval-grid th,
+  #screen-results .eval-grid td { padding-top: 7px; padding-bottom: 7px; }
+}
+
+/* Phones */
+@media (max-width: 560px) {
+  /* Results: the Verdict column is cut off on a phone, the points are enough */
+  .eval-grid th:nth-child(5),
+  .eval-grid td:nth-child(5) { display: none; }
+
+  /* Compressions: a smaller camera window, so it hides less of the man */
+  body.game-mode #camera-box.visible { width: 150px; }
+}
+
+/* Setup on a phone: mascot beside the bubble and a shorter camera, so it fits */
+@media (max-width: 860px) {
+  body[data-screen="setup"] #camera-box { width: min(100%, calc(30vh * 4 / 3)); }
+  body[data-screen="setup"] #screen-setup .coach { flex-direction: row; align-items: center; }
+  body[data-screen="setup"] #screen-setup .coach .sticker { width: 56px; height: 56px; }
+  body[data-screen="setup"] #screen-setup .bubble::before { left: -11px; top: 50%; margin-top: -8px; transform: rotate(45deg); }
+  body[data-screen="setup"] #screen-setup .big-number { font-size: 30px; }
+}
